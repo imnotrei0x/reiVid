@@ -1,6 +1,8 @@
 # reiVid
 
-A browser-based video editor that allows you to crop, trim and more directly in your browser. No server-side processing is required.
+A browser-based video editor that allows you to crop, trim and more - directly in your browser. 
+
+No server-side processing is required.
 
 ## Features
 - **Crop Video**: Use a draggable overlay to define your desired area.
