@@ -2,8 +2,7 @@
 <html>
 <head>
     <title>reiVid</title>
-    <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.10.1/dist/ffmpeg.min.js"></script>
-    <script src="https://unpkg.com/@ffmpeg/core@0.10.0/dist/ffmpeg-core.js"></script>
+    <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.9.7/dist/ffmpeg.min.js"></script>
     <style>
         body {
             margin: 0;
@@ -614,7 +613,6 @@
         const { createFFmpeg, fetchFile } = FFmpeg;
         
         const ffmpeg = createFFmpeg({
-            corePath: 'https://unpkg.com/@ffmpeg/core@0.10.0/dist/ffmpeg-core.js',
             log: true,
             progress: ({ ratio }) => {
                 if (downloadBtn) {
