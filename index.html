@@ -2,8 +2,512 @@
 <html>
 <head>
     <title>reiVid</title>
-    <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.7/dist/ffmpeg.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.7/dist/util.min.js"></script>
+    <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" href="logo.png">
+    <meta name="msapplication-TileImage" content="/favicon.ico">
+    <meta property="og:image" content="/logo.png">
+    <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.11.0/dist/ffmpeg.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const fileInput = document.getElementById('fileInput');
+            const landing = document.getElementById('landing');
+            const preview = document.getElementById('preview');
+            const videoPreview = document.getElementById('videoPreview');
+            const playPauseBtn = document.getElementById('playPauseBtn');
+            const timeDisplay = document.getElementById('timeDisplay');
+            const timeSlider = document.getElementById('timeSlider');
+            const endSlider = document.getElementById('endSlider');
+            const cropOverlay = document.getElementById('cropOverlay');
+            const cropPoints = document.querySelectorAll('.crop-point');
+            const downloadBtn = document.getElementById('downloadBtn');
+            const qualityBtns = document.querySelectorAll('.quality-btn');
+            
+            let isDragging = false;
+            let currentPoint = null;
+            let startX, startY, startLeft, startTop, startWidth, startHeight;
+            let currentVideoUrl = null;
+            let selectedQuality = 'original';
+            let processedVideoBlob = null;
+
+            async function initFFmpeg() {
+                try {
+                    if (typeof FFmpeg === 'undefined') {
+                        throw new Error('FFmpeg failed to load');
+                    }
+                    
+                    const { createFFmpeg } = FFmpeg;
+                    window.ffmpeg = createFFmpeg({
+                        log: true,
+                        corePath: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js'
+                    });
+                    
+                    await window.ffmpeg.load();
+                } catch (err) {
+                    throw new Error('FFmpeg initialization error: ' + err.message);
+                }
+            }
+
+            function cleanupFFmpeg() {
+                if (window.ffmpeg) {
+                    window.ffmpeg.exit();
+                    window.ffmpeg = null;
+                }
+            }
+
+            function cleanupVideoUrl() {
+                if (currentVideoUrl) {
+                    URL.revokeObjectURL(currentVideoUrl);
+                }
+            }
+
+            function handleResize() {
+                const wrapperRect = cropOverlay.parentElement.getBoundingClientRect();
+                
+                const newLeft = Math.min(cropOverlay.offsetLeft, wrapperRect.width - cropOverlay.offsetWidth);
+                const newTop = Math.min(cropOverlay.offsetTop, wrapperRect.height - cropOverlay.offsetHeight);
+                
+                cropOverlay.style.left = `${newLeft}px`;
+                cropOverlay.style.top = `${newTop}px`;
+            }
+
+            window.addEventListener('resize', handleResize);
+
+            function formatTime(seconds) {
+                const minutes = Math.floor(seconds / 60);
+                const remainingSeconds = Math.floor(seconds % 60);
+                return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+            }
+
+            function updateTimeDisplay() {
+                if (!isNaN(videoPreview.duration)) {
+                    const endTime = (endSlider.value / 100) * videoPreview.duration;
+                    timeDisplay.textContent = `${formatTime(videoPreview.currentTime)} / ${formatTime(endTime)}`;
+                }
+            }
+
+            playPauseBtn.addEventListener('click', function() {
+                if (videoPreview.paused) {
+                    const startTime = (timeSlider.value / 100) * videoPreview.duration;
+                    if (Math.abs(videoPreview.currentTime - startTime) > 0.1) {
+                        videoPreview.currentTime = startTime;
+                    }
+                    videoPreview.play();
+                    playPauseBtn.innerHTML = '&#10074;&#10074;';
+                } else {
+                    videoPreview.pause();
+                    playPauseBtn.innerHTML = '&#9654;';
+                }
+            });
+
+            function resetCropOverlay() {
+                cropOverlay.style.top = '0';
+                cropOverlay.style.left = '0';
+                cropOverlay.style.width = '100%';
+                cropOverlay.style.height = '100%';
+            }
+
+            fileInput.addEventListener('change', async function(e) {
+                processedVideoBlob = null;
+                
+                const file = e.target.files[0];
+                if (file) {
+                    const maxSize = 100 * 1024 * 1024;
+                    if (file.size > maxSize) {
+                        alert('File is too large. Maximum size is 100MB');
+                        fileInput.value = '';
+                        return;
+                    }
+
+                    const uploadButton = document.querySelector('.upload-button');
+                    uploadButton.disabled = true;
+                    uploadButton.textContent = 'Loading FFmpeg...';
+
+                    try {
+                        await initFFmpeg();
+
+                        cleanupVideoUrl();
+                        currentVideoUrl = URL.createObjectURL(file);
+                        videoPreview.src = currentVideoUrl;
+                        
+                        const loadPromise = new Promise((resolve, reject) => {
+                            videoPreview.addEventListener('loadedmetadata', resolve, { once: true });
+                            videoPreview.addEventListener('error', reject, { once: true });
+                        });
+
+                        await loadPromise;
+                        
+                        if (videoPreview.duration < 1) {
+                            throw new Error('Video must be at least 1 second long');
+                        }
+                        
+                        landing.style.display = 'none';
+                        preview.style.display = 'flex';
+                        timeSlider.value = 0;
+                        endSlider.value = 100;
+                        videoPreview.currentTime = 0;
+                        resetCropOverlay();
+                        updateTimeDisplay();
+                        
+                    } catch (error) {
+                        alert(error.message || 'Error loading video');
+                        videoPreview.src = '';
+                        cleanupVideoUrl();
+                        cleanupFFmpeg();
+                        fileInput.value = '';
+                    } finally {
+                        uploadButton.disabled = false;
+                        uploadButton.textContent = 'Upload Video';
+                    }
+                } else {
+                    cleanupFFmpeg();
+                }
+            });
+
+            videoPreview.addEventListener('timeupdate', function() {
+                const endTime = (endSlider.value / 100) * videoPreview.duration;
+                
+                if (videoPreview.currentTime >= endTime) {
+                    videoPreview.pause();
+                    playPauseBtn.innerHTML = '&#9654;';
+                }
+                
+                updateTimeDisplay();
+            });
+
+            let sliderUpdateTimeout;
+            
+            timeSlider.addEventListener('input', function() {
+                const minDistance = (1 / videoPreview.duration) * 100;
+                const startValue = parseFloat(timeSlider.value);
+                const endValue = parseFloat(endSlider.value);
+
+                if (endValue - startValue < minDistance) {
+                    timeSlider.value = endValue - minDistance;
+                    return;
+                }
+
+                clearTimeout(sliderUpdateTimeout);
+                sliderUpdateTimeout = setTimeout(() => {
+                    const startTime = (timeSlider.value / 100) * videoPreview.duration;
+                    videoPreview.currentTime = startTime;
+                    
+                    if (!videoPreview.paused) {
+                        videoPreview.play();
+                    }
+                }, 16);
+
+                updateTimeDisplay();
+            });
+
+            endSlider.addEventListener('input', function() {
+                const minDistance = (1 / videoPreview.duration) * 100;
+                const startValue = parseFloat(timeSlider.value);
+                const endValue = parseFloat(endSlider.value);
+
+                if (endValue - startValue < minDistance) {
+                    endSlider.value = startValue + minDistance;
+                    return;
+                }
+
+                updateTimeDisplay();
+            });
+
+            cropOverlay.addEventListener('mousedown', initDrag);
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('mouseup', stopDrag);
+
+            cropPoints.forEach(point => {
+                point.addEventListener('mousedown', initPointDrag);
+            });
+
+            function initDrag(e) {
+                if (e.button !== 0) return;
+                
+                if (e.target === cropOverlay) {
+                    isDragging = true;
+                    startX = e.clientX;
+                    startY = e.clientY;
+                    startLeft = cropOverlay.offsetLeft;
+                    startTop = cropOverlay.offsetTop;
+                }
+            }
+
+            function initPointDrag(e) {
+                if (e.button !== 0) return;
+                
+                e.stopPropagation();
+                isDragging = true;
+                currentPoint = e.target;
+                startX = e.clientX;
+                startY = e.clientY;
+                startWidth = cropOverlay.offsetWidth;
+                startHeight = cropOverlay.offsetHeight;
+                startLeft = cropOverlay.offsetLeft;
+                startTop = cropOverlay.offsetTop;
+            }
+
+            function drag(e) {
+                if (!isDragging) return;
+
+                const wrapperRect = cropOverlay.parentElement.getBoundingClientRect();
+                const minSize = 50;
+                
+                if (currentPoint) {
+                    const dx = e.clientX - startX;
+                    const dy = e.clientY - startY;
+                    
+                    const point = currentPoint.dataset.point;
+                    let newWidth = startWidth;
+                    let newHeight = startHeight;
+                    let newLeft = startLeft;
+                    let newTop = startTop;
+
+                    switch(point) {
+                        case 'top-left':
+                            newLeft = Math.min(Math.max(0, startLeft + dx), startLeft + startWidth - minSize);
+                            newTop = Math.min(Math.max(0, startTop + dy), startTop + startHeight - minSize);
+                            newWidth = startLeft + startWidth - newLeft;
+                            newHeight = startTop + startHeight - newTop;
+                            break;
+                        case 'top-right':
+                            newWidth = Math.min(Math.max(minSize, startWidth + dx), wrapperRect.width - startLeft);
+                            newTop = Math.min(Math.max(0, startTop + dy), startTop + startHeight - minSize);
+                            newHeight = startTop + startHeight - newTop;
+                            break;
+                        case 'bottom-left':
+                            newLeft = Math.min(Math.max(0, startLeft + dx), startLeft + startWidth - minSize);
+                            newWidth = startLeft + startWidth - newLeft;
+                            newHeight = Math.min(Math.max(minSize, startHeight + dy), wrapperRect.height - startTop);
+                            break;
+                        case 'bottom-right':
+                            newWidth = Math.min(Math.max(minSize, startWidth + dx), wrapperRect.width - startLeft);
+                            newHeight = Math.min(Math.max(minSize, startHeight + dy), wrapperRect.height - startTop);
+                            break;
+                    }
+
+                    if (newLeft + newWidth > wrapperRect.width) {
+                        newWidth = wrapperRect.width - newLeft;
+                    }
+                    if (newTop + newHeight > wrapperRect.height) {
+                        newHeight = wrapperRect.height - newTop;
+                    }
+
+                    newWidth = Math.max(minSize, newWidth);
+                    newHeight = Math.max(minSize, newHeight);
+
+                    cropOverlay.style.width = `${newWidth}px`;
+                    cropOverlay.style.height = `${newHeight}px`;
+                    cropOverlay.style.left = `${newLeft}px`;
+                    cropOverlay.style.top = `${newTop}px`;
+                } else {
+                    const dx = e.clientX - startX;
+                    const dy = e.clientY - startY;
+                    
+                    let newLeft = startLeft + dx;
+                    let newTop = startTop + dy;
+
+                    newLeft = Math.max(0, Math.min(newLeft, wrapperRect.width - cropOverlay.offsetWidth));
+                    newTop = Math.max(0, Math.min(newTop, wrapperRect.height - cropOverlay.offsetHeight));
+
+                    cropOverlay.style.left = `${newLeft}px`;
+                    cropOverlay.style.top = `${newTop}px`;
+                }
+            }
+
+            function stopDrag() {
+                isDragging = false;
+                currentPoint = null;
+            }
+
+            cropOverlay.addEventListener('touchstart', e => {
+                e.preventDefault();
+                const touch = e.touches[0];
+                const event = new MouseEvent('mousedown', {
+                    clientX: touch.clientX,
+                    clientY: touch.clientY
+                });
+                initDrag(event);
+            });
+
+            document.addEventListener('touchmove', e => {
+                if (isDragging) {
+                    e.preventDefault();
+                    const touch = e.touches[0];
+                    const event = new MouseEvent('mousemove', {
+                        clientX: touch.clientX,
+                        clientY: touch.clientY
+                    });
+                    drag(event);
+                }
+            });
+
+            document.addEventListener('touchend', e => {
+                if (isDragging) {
+                    e.preventDefault();
+                    stopDrag();
+                }
+            });
+
+            document.addEventListener('mouseup', function(e) {
+                if (isDragging) {
+                    stopDrag();
+                }
+            });
+
+            window.addEventListener('blur', function() {
+                if (isDragging) {
+                    stopDrag();
+                }
+            });
+
+            window.addEventListener('beforeunload', () => {
+                cleanupVideoUrl();
+                cleanupFFmpeg();
+            });
+
+            downloadBtn.addEventListener('click', async function() {
+                if (processedVideoBlob) {
+                    const url = URL.createObjectURL(processedVideoBlob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    const format = document.getElementById('formatSelect').value;
+                    a.download = `edited_video.${format}`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    setTimeout(() => URL.revokeObjectURL(url), 100);
+                    return;
+                }
+
+                downloadBtn.disabled = true;
+                downloadBtn.textContent = 'Loading FFmpeg...';
+
+                try {
+                    const ffmpeg = window.ffmpeg;
+                    if (!ffmpeg) {
+                        throw new Error('FFmpeg not initialized');
+                    }
+
+                    if (!videoPreview.src) {
+                        alert('Please upload a video first');
+                        return;
+                    }
+
+                    downloadBtn.textContent = 'Processing...';
+
+                    const videoBlob = await fetch(videoPreview.src).then(r => r.blob());
+                    const { fetchFile } = FFmpeg;
+                    await ffmpeg.FS('writeFile', 'input.webm', await fetchFile(videoBlob));
+
+                    const videoRect = videoPreview.getBoundingClientRect();
+                    const cropRect = cropOverlay.getBoundingClientRect();
+                    
+                    const scaleX = videoPreview.videoWidth / videoRect.width;
+                    const scaleY = videoPreview.videoHeight / videoRect.height;
+                    
+                    const cropX = Math.round((cropRect.left - videoRect.left) * scaleX);
+                    const cropY = Math.round((cropRect.top - videoRect.top) * scaleY);
+                    const cropWidth = Math.round(cropRect.width * scaleX);
+                    const cropHeight = Math.round(cropRect.height * scaleY);
+
+                    const startTime = (timeSlider.value / 100) * videoPreview.duration;
+                    const endTime = (endSlider.value / 100) * videoPreview.duration;
+                    const duration = endTime - startTime;
+
+                    const format = document.getElementById('formatSelect').value;
+                    let outputFileName = `output.${format}`;
+                    let ffmpegArgs = [
+                        '-i', 'input.webm',
+                        '-ss', startTime.toString(),
+                        '-t', duration.toString(),
+                        '-filter:v', `crop=${cropWidth}:${cropHeight}:${cropX}:${cropY}`
+                    ];
+
+                    // Add format-specific settings
+                    switch(format) {
+                        case 'mp4':
+                            ffmpegArgs.push(
+                                '-c:v', 'libx264',
+                                '-preset', 'slow',
+                                '-crf', '18',
+                                '-profile:v', 'high',
+                                '-level', '4.1',
+                                '-movflags', '+faststart',
+                                '-c:a', 'aac',
+                                '-b:a', '192k'
+                            );
+                            break;
+                        case 'webm':
+                            ffmpegArgs.push(
+                                '-c:v', 'libvpx-vp9',
+                                '-crf', '30',
+                                '-b:v', '0',
+                                '-c:a', 'libopus'
+                            );
+                            break;
+                        case 'mov':
+                            ffmpegArgs.push(
+                                '-c:v', 'prores_ks',
+                                '-profile:v', '3',
+                                '-c:a', 'pcm_s16le',
+                                '-movflags', '+faststart'
+                            );
+                            break;
+                        case 'gif':
+                            ffmpegArgs.push(
+                                '-vf', 'split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse',
+                                '-loop', '0'
+                            );
+                            break;
+                    }
+
+                    ffmpegArgs.push('-strict', 'experimental', outputFileName);
+
+                    await ffmpeg.run(...ffmpegArgs);
+
+                    const data = ffmpeg.FS('readFile', outputFileName);
+                    const mimeTypes = {
+                        'mp4': 'video/mp4',
+                        'webm': 'video/webm',
+                        'mov': 'video/quicktime',
+                        'gif': 'image/gif'
+                    };
+                    processedVideoBlob = new Blob([data.buffer], { type: mimeTypes[format] });
+                    const url = URL.createObjectURL(processedVideoBlob);
+                    
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `edited_video.${format}`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+
+                    setTimeout(() => {
+                        URL.revokeObjectURL(url);
+                        try {
+                            ffmpeg.FS('unlink', 'input.webm');
+                            ffmpeg.FS('unlink', outputFileName);
+                        } catch (e) {
+                            console.error('Cleanup error:', e);
+                        }
+                        cleanupFFmpeg();
+                    }, 100);
+
+                } catch (error) {
+                    alert('Error processing video: ' + error.message);
+                    processedVideoBlob = null;
+                } finally {
+                    downloadBtn.disabled = false;
+                    downloadBtn.textContent = 'Download Video';
+                }
+            });
+
+            timeSlider.addEventListener('change', () => processedVideoBlob = null);
+            endSlider.addEventListener('change', () => processedVideoBlob = null);
+            cropOverlay.addEventListener('mouseup', () => processedVideoBlob = null);
+        });
+    </script>
     <style>
         body {
             margin: 0;
@@ -269,6 +773,115 @@
             gap: 1rem;
             margin-bottom: 2rem;
         }
+
+        .description {
+            font-size: 1.2rem;
+            color: #cccccc;
+            margin: 0;
+            text-align: center;
+        }
+
+        .container {
+            margin-top: 80px;
+        }
+
+        .nav-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            align-items: center;
+            padding: 1rem 2rem;
+            background: transparent;
+            z-index: 1000;
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            text-decoration: none;
+            color: white;
+        }
+
+        .nav-brand img {
+            width: 32px;
+            height: auto;
+        }
+
+        .nav-brand h1 {
+            font-size: 1.5rem;
+            margin: 0;
+        }
+
+        .nav-links {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 2rem;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            font-size: 1.1rem;
+            transition: color 0.2s ease;
+            text-transform: lowercase;
+        }
+
+        .nav-links a:hover {
+            color: #007bff;
+        }
+
+        .quality-options {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            justify-content: center;
+        }
+
+        .quality-btn {
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+            background: #2a2a2a;
+            color: white;
+            border: 1px solid #3a3a3a;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .quality-btn.active {
+            background: #007bff;
+            border-color: #0056b3;
+        }
+
+        .quality-btn:hover {
+            background: #3a3a3a;
+        }
+
+        .format-select-container {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .format-select {
+            padding: 0.5rem;
+            font-size: 1rem;
+            background: #2a2a2a;
+            color: white;
+            border: 1px solid #3a3a3a;
+            border-radius: 4px;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .format-select:hover {
+            background: #3a3a3a;
+        }
     </style>
 </head>
 <body>
@@ -277,14 +890,34 @@
             <img src="logo.png" alt="reiVid" class="logo">
             <h1>reiVid</h1>
         </div>
+        <p class="description">Trim and crop your videos in your browser</p>
         <button class="upload-button" onclick="document.getElementById('fileInput').click()">Upload Video</button>
         <input type="file" id="fileInput" accept="video/*">
     </div>
 
     <div class="video-preview-container" id="preview">
+        <footer class="nav-footer">
+            <a href="/" class="nav-brand">
+                <img src="logo.png" alt="reiVid">
+                <h1>reiVid</h1>
+            </a>
+            <nav class="nav-links">
+                <a href="/">home</a>
+                <a href="/about.html">about</a>
+                <a href="/donate.html">donate</a>
+            </nav>
+        </footer>
         <div class="button-container">
             <button class="upload-button" onclick="document.getElementById('fileInput').click()">Choose Different Video</button>
-            <button class="upload-button" id="downloadBtn">Download Video</button>
+            <div class="format-select-container">
+                <select id="formatSelect" class="format-select">
+                    <option value="mp4">MP4</option>
+                    <option value="webm">WebM</option>
+                    <option value="mov">MOV</option>
+                    <option value="gif">GIF</option>
+                </select>
+                <button class="upload-button" id="downloadBtn">Download Video</button>
+            </div>
         </div>
         <div style="position: relative;">
             <div class="video-wrapper">
@@ -308,402 +941,5 @@
             <span class="time-display" id="timeDisplay">0:00 / 0:00</span>
         </div>
     </div>
-
-    <script>
-        const fileInput = document.getElementById('fileInput');
-        const landing = document.getElementById('landing');
-        const preview = document.getElementById('preview');
-        const videoPreview = document.getElementById('videoPreview');
-        const playPauseBtn = document.getElementById('playPauseBtn');
-        const timeDisplay = document.getElementById('timeDisplay');
-        const timeSlider = document.getElementById('timeSlider');
-        const endSlider = document.getElementById('endSlider');
-        const cropOverlay = document.getElementById('cropOverlay');
-        const cropPoints = document.querySelectorAll('.crop-point');
-        let isDragging = false;
-        let currentPoint = null;
-        let startX, startY, startLeft, startTop, startWidth, startHeight;
-
-        let currentVideoUrl = null;
-
-        function cleanupVideoUrl() {
-            if (currentVideoUrl) {
-                URL.revokeObjectURL(currentVideoUrl);
-            }
-        }
-
-        function handleResize() {
-            const wrapperRect = cropOverlay.parentElement.getBoundingClientRect();
-            
-            const newLeft = Math.min(cropOverlay.offsetLeft, wrapperRect.width - cropOverlay.offsetWidth);
-            const newTop = Math.min(cropOverlay.offsetTop, wrapperRect.height - cropOverlay.offsetHeight);
-            
-            cropOverlay.style.left = `${newLeft}px`;
-            cropOverlay.style.top = `${newTop}px`;
-        }
-
-        window.addEventListener('resize', handleResize);
-
-        function formatTime(seconds) {
-            const minutes = Math.floor(seconds / 60);
-            const remainingSeconds = Math.floor(seconds % 60);
-            return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-        }
-
-        function updateTimeDisplay() {
-            if (!isNaN(videoPreview.duration)) {
-                const endTime = (endSlider.value / 100) * videoPreview.duration;
-                timeDisplay.textContent = `${formatTime(videoPreview.currentTime)} / ${formatTime(endTime)}`;
-            }
-        }
-
-        playPauseBtn.addEventListener('click', function() {
-            if (videoPreview.paused) {
-                const startTime = (timeSlider.value / 100) * videoPreview.duration;
-                if (Math.abs(videoPreview.currentTime - startTime) > 0.1) {
-                    videoPreview.currentTime = startTime;
-                }
-                videoPreview.play();
-                playPauseBtn.innerHTML = '&#10074;&#10074;';
-            } else {
-                videoPreview.pause();
-                playPauseBtn.innerHTML = '&#9654;';
-            }
-        });
-
-        function resetCropOverlay() {
-            cropOverlay.style.top = '0';
-            cropOverlay.style.left = '0';
-            cropOverlay.style.width = '100%';
-            cropOverlay.style.height = '100%';
-        }
-
-        fileInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                cleanupVideoUrl();
-                currentVideoUrl = URL.createObjectURL(file);
-                videoPreview.src = currentVideoUrl;
-                
-                const loadPromise = new Promise((resolve, reject) => {
-                    videoPreview.addEventListener('loadedmetadata', resolve, { once: true });
-                    videoPreview.addEventListener('error', reject, { once: true });
-                });
-
-                loadPromise.then(() => {
-                    if (videoPreview.duration < 1) {
-                        throw new Error('Video must be at least 1 second long');
-                    }
-                    landing.style.display = 'none';
-                    preview.style.display = 'flex';
-                    timeSlider.value = 0;
-                    endSlider.value = 100;
-                    videoPreview.currentTime = 0;
-                    resetCropOverlay(); 
-                    updateTimeDisplay();
-                }).catch(error => {
-                    alert(error.message || 'Error loading video');
-                    videoPreview.src = '';
-                    cleanupVideoUrl();
-                });
-            }
-        });
-
-        videoPreview.addEventListener('timeupdate', function() {
-            const endTime = (endSlider.value / 100) * videoPreview.duration;
-            
-            if (videoPreview.currentTime >= endTime) {
-                videoPreview.pause();
-                playPauseBtn.innerHTML = '&#9654;';
-            }
-            
-            updateTimeDisplay();
-        });
-
-        let sliderUpdateTimeout;
-        
-        timeSlider.addEventListener('input', function() {
-            const minDistance = (1 / videoPreview.duration) * 100;
-            const startValue = parseFloat(timeSlider.value);
-            const endValue = parseFloat(endSlider.value);
-
-            if (endValue - startValue < minDistance) {
-                timeSlider.value = endValue - minDistance;
-                return;
-            }
-
-            clearTimeout(sliderUpdateTimeout);
-            sliderUpdateTimeout = setTimeout(() => {
-                const startTime = (timeSlider.value / 100) * videoPreview.duration;
-                videoPreview.currentTime = startTime;
-                
-                if (!videoPreview.paused) {
-                    videoPreview.play();
-                }
-            }, 16);
-
-            updateTimeDisplay();
-        });
-
-        endSlider.addEventListener('input', function() {
-            const minDistance = (1 / videoPreview.duration) * 100;
-            const startValue = parseFloat(timeSlider.value);
-            const endValue = parseFloat(endSlider.value);
-
-            if (endValue - startValue < minDistance) {
-                endSlider.value = startValue + minDistance;
-                return;
-            }
-
-            updateTimeDisplay();
-        });
-
-        cropOverlay.addEventListener('mousedown', initDrag);
-        document.addEventListener('mousemove', drag);
-        document.addEventListener('mouseup', stopDrag);
-
-        cropPoints.forEach(point => {
-            point.addEventListener('mousedown', initPointDrag);
-        });
-
-        function initDrag(e) {
-            if (e.button !== 0) return;
-            
-            if (e.target === cropOverlay) {
-                isDragging = true;
-                startX = e.clientX;
-                startY = e.clientY;
-                startLeft = cropOverlay.offsetLeft;
-                startTop = cropOverlay.offsetTop;
-            }
-        }
-
-        function initPointDrag(e) {
-            if (e.button !== 0) return;
-            
-            e.stopPropagation();
-            isDragging = true;
-            currentPoint = e.target;
-            startX = e.clientX;
-            startY = e.clientY;
-            startWidth = cropOverlay.offsetWidth;
-            startHeight = cropOverlay.offsetHeight;
-            startLeft = cropOverlay.offsetLeft;
-            startTop = cropOverlay.offsetTop;
-        }
-
-        function drag(e) {
-            if (!isDragging) return;
-
-            const wrapperRect = cropOverlay.parentElement.getBoundingClientRect();
-            
-            if (currentPoint) {
-                const dx = e.clientX - startX;
-                const dy = e.clientY - startY;
-                
-                const point = currentPoint.dataset.point;
-                let newWidth = startWidth;
-                let newHeight = startHeight;
-                let newLeft = startLeft;
-                let newTop = startTop;
-
-                switch(point) {
-                    case 'top-left':
-                        newWidth = Math.min(startWidth - dx, startLeft + startWidth);
-                        newHeight = Math.min(startHeight - dy, startTop + startHeight);
-                        newLeft = Math.max(0, startLeft + dx);
-                        newTop = Math.max(0, startTop + dy);
-                        newWidth = startLeft + startWidth - newLeft;
-                        newHeight = startTop + startHeight - newTop;
-                        break;
-                    case 'top-right':
-                        newWidth = Math.min(startWidth + dx, wrapperRect.width - startLeft);
-                        newHeight = Math.min(startHeight - dy, startTop + startHeight);
-                        newTop = Math.max(0, startTop + dy);
-                        newHeight = startTop + startHeight - newTop;
-                        break;
-                    case 'bottom-left':
-                        newWidth = Math.min(startWidth - dx, startLeft + startWidth);
-                        newHeight = Math.min(startHeight + dy, wrapperRect.height - startTop);
-                        newLeft = Math.max(0, startLeft + dx);
-                        newWidth = startLeft + startWidth - newLeft;
-                        break;
-                    case 'bottom-right':
-                        newWidth = Math.min(startWidth + dx, wrapperRect.width - startLeft);
-                        newHeight = Math.min(startHeight + dy, wrapperRect.height - startTop);
-                        break;
-                }
-
-                const minSize = 50;
-                newWidth = Math.max(minSize, newWidth);
-                newHeight = Math.max(minSize, newHeight);
-
-                if (newLeft + newWidth > wrapperRect.width) {
-                    newWidth = wrapperRect.width - newLeft;
-                }
-                if (newTop + newHeight > wrapperRect.height) {
-                    newHeight = wrapperRect.height - newTop;
-                }
-
-                cropOverlay.style.width = `${newWidth}px`;
-                cropOverlay.style.height = `${newHeight}px`;
-                cropOverlay.style.left = `${newLeft}px`;
-                cropOverlay.style.top = `${newTop}px`;
-            } else {
-                const dx = e.clientX - startX;
-                const dy = e.clientY - startY;
-                
-                let newLeft = Math.max(0, Math.min(startLeft + dx, wrapperRect.width - cropOverlay.offsetWidth));
-                let newTop = Math.max(0, Math.min(startTop + dy, wrapperRect.height - cropOverlay.offsetHeight));
-
-                cropOverlay.style.left = `${newLeft}px`;
-                cropOverlay.style.top = `${newTop}px`;
-            }
-        }
-
-        function stopDrag() {
-            isDragging = false;
-            currentPoint = null;
-        }
-
-        cropOverlay.addEventListener('touchstart', e => {
-            e.preventDefault();
-            const touch = e.touches[0];
-            const event = new MouseEvent('mousedown', {
-                clientX: touch.clientX,
-                clientY: touch.clientY
-            });
-            initDrag(event);
-        });
-
-        document.addEventListener('touchmove', e => {
-            if (isDragging) {
-                e.preventDefault();
-                const touch = e.touches[0];
-                const event = new MouseEvent('mousemove', {
-                    clientX: touch.clientX,
-                    clientY: touch.clientY
-                });
-                drag(event);
-            }
-        });
-
-        document.addEventListener('touchend', e => {
-            if (isDragging) {
-                e.preventDefault();
-                stopDrag();
-            }
-        });
-
-        document.addEventListener('mouseup', function(e) {
-            if (isDragging) {
-                stopDrag();
-            }
-        });
-
-        window.addEventListener('blur', function() {
-            if (isDragging) {
-                stopDrag();
-            }
-        });
-
-        window.addEventListener('beforeunload', cleanupVideoUrl);
-
-        const downloadBtn = document.getElementById('downloadBtn');
-
-        let ffmpeg = null;
-
-        async function initFFmpeg() {
-            if (!ffmpeg) {
-                const { FFmpeg } = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.7/dist/esm/index.js');
-                ffmpeg = new FFmpeg();
-                await ffmpeg.load({
-                    coreURL: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.7/dist/esm/ffmpeg-core.js',
-                    wasmURL: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.7/dist/esm/ffmpeg-core.wasm',
-                    workerURL: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.7/dist/esm/ffmpeg-core.worker.js'
-                });
-            }
-            return ffmpeg;
-        }
-
-        downloadBtn.addEventListener('click', async function() {
-            downloadBtn.disabled = true;
-            downloadBtn.textContent = 'Loading FFmpeg...';
-
-            try {
-                ffmpeg = await initFFmpeg();
-
-                if (!videoPreview.src) {
-                    alert('Please upload a video first');
-                    return;
-                }
-
-                downloadBtn.textContent = 'Processing...';
-
-                const videoBlob = await fetch(videoPreview.src).then(r => r.blob());
-                const videoArrayBuffer = await videoBlob.arrayBuffer();
-                
-                const videoRect = videoPreview.getBoundingClientRect();
-                const cropRect = cropOverlay.getBoundingClientRect();
-                
-                const scaleX = videoPreview.videoWidth / videoRect.width;
-                const scaleY = videoPreview.videoHeight / videoRect.height;
-                
-                const cropX = Math.round((cropRect.left - videoRect.left) * scaleX);
-                const cropY = Math.round((cropRect.top - videoRect.top) * scaleY);
-                const cropWidth = Math.round(cropRect.width * scaleX);
-                const cropHeight = Math.round(cropRect.height * scaleY);
-
-                const startTime = (timeSlider.value / 100) * videoPreview.duration;
-                const endTime = (endSlider.value / 100) * videoPreview.duration;
-                const duration = endTime - startTime;
-
-                await ffmpeg.writeFile('input.webm', new Uint8Array(videoArrayBuffer));
-
-                console.log('Starting FFmpeg processing...');
-
-                await ffmpeg.exec([
-                    '-i', 'input.webm',
-                    '-ss', startTime.toString(),
-                    '-t', duration.toString(),
-                    '-filter:v', `crop=${cropWidth}:${cropHeight}:${cropX}:${cropY}`,
-                    '-c:v', 'libx264',
-                    '-preset', 'fast',
-                    '-c:a', 'aac',
-                    '-strict', 'experimental',
-                    'output.mp4'
-                ]);
-
-                console.log('FFmpeg processing complete');
-
-                const data = await ffmpeg.readFile('output.mp4');
-                
-                const url = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'edited_video.mp4';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-
-                setTimeout(() => {
-                    URL.revokeObjectURL(url);
-                    try {
-                        ffmpeg.deleteFile('input.webm');
-                        ffmpeg.deleteFile('output.mp4');
-                    } catch (e) {
-                        console.warn('Cleanup error:', e);
-                    }
-                }, 100);
-
-            } catch (error) {
-                console.error('Processing error:', error);
-                alert('Error processing video: ' + error.message);
-            } finally {
-                downloadBtn.disabled = false;
-                downloadBtn.textContent = 'Download Video';
-            }
-        });
-    </script>
 </body>
 </html>
