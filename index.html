@@ -371,8 +371,7 @@
                     const url = URL.createObjectURL(processedVideoBlob);
                     const a = document.createElement('a');
                     a.href = url;
-                    const format = document.getElementById('formatSelect').value;
-                    a.download = `edited_video.${format}`;
+                    a.download = `edited_video_${selectedQuality}.mp4`;
                     document.body.appendChild(a);
                     a.click();
                     document.body.removeChild(a);
@@ -415,70 +414,32 @@
                     const endTime = (endSlider.value / 100) * videoPreview.duration;
                     const duration = endTime - startTime;
 
-                    const format = document.getElementById('formatSelect').value;
-                    let outputFileName = `output.${format}`;
-                    let ffmpegArgs = [
+                    const ffmpegArgs = [
                         '-i', 'input.webm',
                         '-ss', startTime.toString(),
                         '-t', duration.toString(),
-                        '-filter:v', `crop=${cropWidth}:${cropHeight}:${cropX}:${cropY}`
+                        '-filter:v', `crop=${cropWidth}:${cropHeight}:${cropX}:${cropY}`,
+                        '-c:v', 'libx264',
+                        '-preset', 'slow',
+                        '-crf', '18',
+                        '-profile:v', 'high',
+                        '-level', '4.1',
+                        '-movflags', '+faststart',
+                        '-c:a', 'aac',
+                        '-b:a', '192k',
+                        '-strict', 'experimental',
+                        'output.mp4'
                     ];
-
-                    // Add format-specific settings
-                    switch(format) {
-                        case 'mp4':
-                            ffmpegArgs.push(
-                                '-c:v', 'libx264',
-                                '-preset', 'slow',
-                                '-crf', '18',
-                                '-profile:v', 'high',
-                                '-level', '4.1',
-                                '-movflags', '+faststart',
-                                '-c:a', 'aac',
-                                '-b:a', '192k'
-                            );
-                            break;
-                        case 'webm':
-                            ffmpegArgs.push(
-                                '-c:v', 'libvpx-vp9',
-                                '-crf', '30',
-                                '-b:v', '0',
-                                '-c:a', 'libopus'
-                            );
-                            break;
-                        case 'mov':
-                            ffmpegArgs.push(
-                                '-c:v', 'prores_ks',
-                                '-profile:v', '3',
-                                '-c:a', 'pcm_s16le',
-                                '-movflags', '+faststart'
-                            );
-                            break;
-                        case 'gif':
-                            ffmpegArgs.push(
-                                '-vf', 'split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse',
-                                '-loop', '0'
-                            );
-                            break;
-                    }
-
-                    ffmpegArgs.push('-strict', 'experimental', outputFileName);
 
                     await ffmpeg.run(...ffmpegArgs);
 
-                    const data = ffmpeg.FS('readFile', outputFileName);
-                    const mimeTypes = {
-                        'mp4': 'video/mp4',
-                        'webm': 'video/webm',
-                        'mov': 'video/quicktime',
-                        'gif': 'image/gif'
-                    };
-                    processedVideoBlob = new Blob([data.buffer], { type: mimeTypes[format] });
+                    const data = ffmpeg.FS('readFile', 'output.mp4');
+                    processedVideoBlob = new Blob([data.buffer], { type: 'video/mp4' });
                     const url = URL.createObjectURL(processedVideoBlob);
                     
                     const a = document.createElement('a');
                     a.href = url;
-                    a.download = `edited_video.${format}`;
+                    a.download = `edited_video_${selectedQuality}.mp4`;
                     document.body.appendChild(a);
                     a.click();
                     document.body.removeChild(a);
@@ -487,7 +448,7 @@
                         URL.revokeObjectURL(url);
                         try {
                             ffmpeg.FS('unlink', 'input.webm');
-                            ffmpeg.FS('unlink', outputFileName);
+                            ffmpeg.FS('unlink', 'output.mp4');
                         } catch (e) {
                             console.error('Cleanup error:', e);
                         }
@@ -861,28 +822,6 @@
         .quality-btn:hover {
             background: #3a3a3a;
         }
-
-        .format-select-container {
-            display: flex;
-            gap: 0.5rem;
-            align-items: center;
-        }
-
-        .format-select {
-            padding: 0.5rem;
-            font-size: 1rem;
-            background: #2a2a2a;
-            color: white;
-            border: 1px solid #3a3a3a;
-            border-radius: 4px;
-            cursor: pointer;
-            outline: none;
-            min-width: 80px;
-        }
-
-        .format-select:hover {
-            background: #3a3a3a;
-        }
     </style>
 </head>
 <body>
@@ -910,15 +849,7 @@
         </footer>
         <div class="button-container">
             <button class="upload-button" onclick="document.getElementById('fileInput').click()">Choose Different Video</button>
-            <div class="format-select-container">
-                <button class="upload-button" id="downloadBtn">Download Video</button>
-                <select id="formatSelect" class="format-select">
-                    <option value="mp4">MP4</option>
-                    <option value="webm">WebM</option>
-                    <option value="mov">MOV</option>
-                    <option value="gif">GIF</option>
-                </select>
-            </div>
+            <button class="upload-button" id="downloadBtn">Download Video</button>
         </div>
         <div style="position: relative;">
             <div class="video-wrapper">
