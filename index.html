@@ -614,19 +614,36 @@
                 const { FFmpeg } = await import('https://unpkg.com/@ffmpeg/ffmpeg@0.12.7/dist/esm/index.js');
                 const ffmpeg = new FFmpeg();
                 
+                // Configure FFmpeg with proper CORS settings
                 await ffmpeg.load({
-                    coreURL: 'https://unpkg.com/@ffmpeg/core@0.12.7/dist/esm/ffmpeg-core.js',
-                    wasmURL: 'https://unpkg.com/@ffmpeg/core@0.12.7/dist/esm/ffmpeg-core.wasm',
-                    workerURL: 'https://unpkg.com/@ffmpeg/core@0.12.7/dist/esm/ffmpeg-core.worker.js',
+                    coreURL: await toBlobURL(
+                        'https://unpkg.com/@ffmpeg/core@0.12.7/dist/esm/ffmpeg-core.js',
+                        'text/javascript'
+                    ),
+                    wasmURL: await toBlobURL(
+                        'https://unpkg.com/@ffmpeg/core@0.12.7/dist/esm/ffmpeg-core.wasm',
+                        'application/wasm'
+                    ),
+                    workerURL: await toBlobURL(
+                        'https://unpkg.com/@ffmpeg/core@0.12.7/dist/esm/ffmpeg-core.worker.js',
+                        'text/javascript'
+                    ),
                     logger: ({ message }) => {
                         console.log('FFmpeg:', message);
                     },
-                    corePath: undefined,
                     progress: (progress) => {
                         downloadBtn.textContent = `Processing: ${(progress.progress * 100).toFixed(0)}%`;
                     }
                 });
 
+                // Helper function to convert URLs to blob URLs
+                async function toBlobURL(url, type) {
+                    const response = await fetch(url);
+                    const blob = await response.blob();
+                    return URL.createObjectURL(new Blob([blob], { type }));
+                }
+
+                // Rest of the processing code remains the same
                 const videoBlob = await fetch(videoPreview.src).then(r => r.blob());
                 
                 const videoRect = videoPreview.getBoundingClientRect();
@@ -663,6 +680,7 @@
                 a.download = 'edited_video.mp4';
                 a.click();
 
+                // Cleanup
                 setTimeout(() => {
                     URL.revokeObjectURL(url);
                     ffmpeg.deleteFile('input.webm');
