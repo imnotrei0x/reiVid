@@ -2,7 +2,8 @@
 <html>
 <head>
     <title>reiVid</title>
-    <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.10.1/dist/ffmpeg.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.10.0/dist/ffmpeg-core.js"></script>
     <style>
         body {
             margin: 0;
@@ -51,6 +52,11 @@
 
         .upload-button:hover {
             background: #0056b3;
+        }
+
+        .upload-button:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
         }
 
         .video-preview-container {
@@ -605,21 +611,33 @@
 
         const downloadBtn = document.getElementById('downloadBtn');
 
+        // Initialize FFmpeg
+        const ffmpeg = createFFmpeg({
+            corePath: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.10.0/dist/ffmpeg-core.js',
+            log: true,
+            progress: ({ ratio }) => {
+                downloadBtn.textContent = `Processing: ${(ratio * 100).toFixed(0)}%`;
+            }
+        });
+
+        // Modified download function
         downloadBtn.addEventListener('click', async function() {
+            if (!ffmpeg.isLoaded()) {
+                downloadBtn.textContent = 'Loading FFmpeg...';
+                try {
+                    await ffmpeg.load();
+                } catch (error) {
+                    console.error('FFmpeg load error:', error);
+                    alert('Error loading video processor. Please try again.');
+                    downloadBtn.textContent = 'Download Video';
+                    return;
+                }
+            }
+
             downloadBtn.disabled = true;
             downloadBtn.textContent = 'Processing...';
 
             try {
-                const { createFFmpeg, fetchFile } = FFmpeg;
-                const ffmpeg = createFFmpeg({
-                    log: true,
-                    progress: ({ ratio }) => {
-                        downloadBtn.textContent = `Processing: ${(ratio * 100).toFixed(0)}%`;
-                    }
-                });
-
-                await ffmpeg.load();
-
                 const videoBlob = await fetch(videoPreview.src).then(r => r.blob());
                 
                 const videoRect = videoPreview.getBoundingClientRect();
@@ -637,20 +655,27 @@
                 const endTime = (endSlider.value / 100) * videoPreview.duration;
                 const duration = endTime - startTime;
 
-                // Write the file to FFmpeg's file system
-                ffmpeg.FS('writeFile', 'input.webm', await fetchFile(videoBlob));
+                // Convert Blob to ArrayBuffer
+                const arrayBuffer = await videoBlob.arrayBuffer();
+                const inputData = new Uint8Array(arrayBuffer);
 
-                // Run the FFmpeg command
+                // Write to FFmpeg's virtual filesystem
+                ffmpeg.FS('writeFile', 'input.webm', inputData);
+
+                // Process the video with FFmpeg
                 await ffmpeg.run(
                     '-i', 'input.webm',
                     '-ss', startTime.toString(),
                     '-t', duration.toString(),
                     '-filter:v', `crop=${cropWidth}:${cropHeight}:${cropX}:${cropY}`,
-                    '-c:a', 'copy',
+                    '-c:v', 'libx264',  // Use H.264 codec
+                    '-preset', 'fast',   // Faster encoding
+                    '-c:a', 'aac',      // Use AAC audio codec
+                    '-strict', 'experimental',
                     'output.mp4'
                 );
 
-                // Read the result
+                // Read the processed video
                 const data = ffmpeg.FS('readFile', 'output.mp4');
                 
                 // Create download link
@@ -668,7 +693,7 @@
                 }, 100);
 
             } catch (error) {
-                console.error('Error:', error);
+                console.error('Processing error:', error);
                 alert('Error processing video: ' + error.message);
             } finally {
                 downloadBtn.disabled = false;
