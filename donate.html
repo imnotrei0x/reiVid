@@ -40,6 +40,15 @@
             text-align: center;
         }
 
+        h1 {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        p {
+            text-align: center;
+        }
+
         .nav-footer {
             position: fixed;
             bottom: 0;
@@ -69,6 +78,22 @@
             font-size: 1.5rem;
             margin: 0;
         }
+
+        .donate-button {
+            display: inline-block;
+            padding: 12px 24px;
+            background: #0070ba;  /* PayPal blue */
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 1.2rem;
+            transition: background-color 0.2s ease;
+            margin: 20px 0;
+        }
+
+        .donate-button:hover {
+            background: #003087;  /* Darker PayPal blue */
+        }
     </style>
 </head>
 <body>
@@ -87,11 +112,9 @@
         <h1>donate</h1>
         <p>if you find this tool useful, consider supporting its development</p>
         <br>
-        <form action="https://www.paypal.com/donate" method="post" target="_top">
-            <input type="hidden" name="hosted_button_id" value="6J45G7JHAU592" />
-            <input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif" border="0" name="submit" title="PayPal - The safer, easier way to pay online!" alt="Donate with PayPal button" />
-            <img alt="" border="0" src="https://www.paypal.com/en_AT/i/scr/pixel.gif" width="1" height="1" />
-        </form>
+        <a href="https://www.paypal.com/paypalme/reiloaded" target="_blank" class="donate-button">
+            donate with PayPal
+        </a>
     </div>
 </body>
 </html> 
