@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>reiVid</title>
+    <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.7/dist/ffmpeg.min.js"></script>
+    <script src="https://unpkg.com/@ffmpeg/util@0.12.7/dist/util.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #1a1a1a;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo {
+            width: 64px;
+            height: auto;
+        }
+
+        h1 {
+            font-size: 3rem;
+            margin: 0;
+        }
+
+        .upload-button {
+            padding: 1rem 2rem;
+            font-size: 1.2rem;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .upload-button:hover {
+            background: #0056b3;
+        }
+
+        .video-preview-container {
+            display: none;
+            width: 90vw;
+            max-width: 1600px;
+            flex-direction: column;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .video-wrapper {
+            width: 100%;
+            height: 900px;
+            background: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .video-preview {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background: #000;
+        }
+
+        .custom-controls {
+            margin-top: 1rem;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            border-radius: 8px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .play-pause-btn {
+            background: transparent;
+            border: none;
+            color: #fff;
+            cursor: pointer;
+            padding: 5px;
+            width: 40px;
+            height: 40px;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.1s;
+            outline: none;
+        }
+
+        .play-pause-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .time-display {
+            color: white;
+            font-size: 14px;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .slider-container {
+            position: relative;
+            flex-grow: 1;
+            margin: 0 15px;
+            height: 4px;
+        }
+
+        .time-slider, .end-slider {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+            pointer-events: none;
+        }
+
+        .time-slider {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+            z-index: 1;
+        }
+
+        .end-slider {
+            z-index: 2;
+        }
+
+        .time-slider::-webkit-slider-thumb,
+        .end-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.1s;
+            pointer-events: auto;
+        }
+
+        .time-slider::-webkit-slider-thumb {
+            background: #007bff;
+        }
+
+        .end-slider::-webkit-slider-thumb {
+            background: #ff3e3e;
+        }
+
+        .time-slider::-moz-range-thumb,
+        .end-slider::-moz-range-thumb {
+            width: 12px;
+            height: 12px;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.1s;
+            pointer-events: auto;
+        }
+
+        .time-slider::-moz-range-thumb {
+            background: #007bff;
+        }
+
+        .end-slider::-moz-range-thumb {
+            background: #ff3e3e;
+        }
+
+        .time-slider::-webkit-slider-thumb:hover,
+        .end-slider::-webkit-slider-thumb:hover,
+        .time-slider::-moz-range-thumb:hover,
+        .end-slider::-moz-range-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        .crop-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .crop-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 2px solid #ff3e3e;
+            cursor: move;
+            touch-action: none;
+            box-sizing: border-box;
+            pointer-events: auto;
+        }
+
+        .crop-point {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: #ff3e3e;
+            border-radius: 50%;
+            cursor: pointer;
+            touch-action: none;
+            pointer-events: auto;
+        }
+
+        .crop-point.top-left { 
+            top: -10px; 
+            left: -10px; 
+        }
+        .crop-point.top-right { 
+            top: -10px; 
+            right: -10px; 
+        }
+        .crop-point.bottom-left { 
+            bottom: -10px; 
+            left: -10px; 
+        }
+        .crop-point.bottom-right { 
+            bottom: -10px; 
+            right: -10px; 
+        }
+
+        .container,
+        .header,
+        .logo,
+        h1,
+        .upload-button,
+        .video-preview-container,
+        .crop-container,
+        .crop-overlay,
+        .crop-point,
+        .custom-controls,
+        .play-pause-btn,
+        .time-display {
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+
+        .button-container {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="landing">
+        <div class="header">
+            <img src="logo.png" alt="reiVid" class="logo">
+            <h1>reiVid</h1>
+        </div>
+        <button class="upload-button" onclick="document.getElementById('fileInput').click()">Upload Video</button>
+        <input type="file" id="fileInput" accept="video/*">
+    </div>
+
+    <div class="video-preview-container" id="preview">
+        <div class="button-container">
+            <button class="upload-button" onclick="document.getElementById('fileInput').click()">Choose Different Video</button>
+            <button class="upload-button" id="downloadBtn">Download Video</button>
+        </div>
+        <div style="position: relative;">
+            <div class="video-wrapper">
+                <video class="video-preview" id="videoPreview" preload="auto"></video>
+            </div>
+            <div class="crop-container">
+                <div class="crop-overlay" id="cropOverlay">
+                    <div class="crop-point top-left" data-point="top-left"></div>
+                    <div class="crop-point top-right" data-point="top-right"></div>
+                    <div class="crop-point bottom-left" data-point="bottom-left"></div>
+                    <div class="crop-point bottom-right" data-point="bottom-right"></div>
+                </div>
+            </div>
+        </div>
+        <div class="custom-controls">
+            <button class="play-pause-btn" id="playPauseBtn">▶</button>
+            <div class="slider-container">
+                <input type="range" class="time-slider" id="timeSlider" value="0" min="0" max="100" step="0.1">
+                <input type="range" class="end-slider" id="endSlider" value="100" min="0" max="100" step="0.1">
+            </div>
+            <span class="time-display" id="timeDisplay">0:00 / 0:00</span>
+        </div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const landing = document.getElementById('landing');
+        const preview = document.getElementById('preview');
+        const videoPreview = document.getElementById('videoPreview');
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const timeDisplay = document.getElementById('timeDisplay');
+        const timeSlider = document.getElementById('timeSlider');
+        const endSlider = document.getElementById('endSlider');
+        const cropOverlay = document.getElementById('cropOverlay');
+        const cropPoints = document.querySelectorAll('.crop-point');
+        let isDragging = false;
+        let currentPoint = null;
+        let startX, startY, startLeft, startTop, startWidth, startHeight;
+
+        let currentVideoUrl = null;
+
+        function cleanupVideoUrl() {
+            if (currentVideoUrl) {
+                URL.revokeObjectURL(currentVideoUrl);
+            }
+        }
+
+        function handleResize() {
+            const wrapperRect = cropOverlay.parentElement.getBoundingClientRect();
+            
+            const newLeft = Math.min(cropOverlay.offsetLeft, wrapperRect.width - cropOverlay.offsetWidth);
+            const newTop = Math.min(cropOverlay.offsetTop, wrapperRect.height - cropOverlay.offsetHeight);
+            
+            cropOverlay.style.left = `${newLeft}px`;
+            cropOverlay.style.top = `${newTop}px`;
+        }
+
+        window.addEventListener('resize', handleResize);
+
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = Math.floor(seconds % 60);
+            return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+        }
+
+        function updateTimeDisplay() {
+            if (!isNaN(videoPreview.duration)) {
+                const endTime = (endSlider.value / 100) * videoPreview.duration;
+                timeDisplay.textContent = `${formatTime(videoPreview.currentTime)} / ${formatTime(endTime)}`;
+            }
+        }
+
+        playPauseBtn.addEventListener('click', function() {
+            if (videoPreview.paused) {
+                const startTime = (timeSlider.value / 100) * videoPreview.duration;
+                if (Math.abs(videoPreview.currentTime - startTime) > 0.1) {
+                    videoPreview.currentTime = startTime;
+                }
+                videoPreview.play();
+                playPauseBtn.innerHTML = '&#10074;&#10074;';
+            } else {
+                videoPreview.pause();
+                playPauseBtn.innerHTML = '&#9654;';
+            }
+        });
+
+        function resetCropOverlay() {
+            cropOverlay.style.top = '0';
+            cropOverlay.style.left = '0';
+            cropOverlay.style.width = '100%';
+            cropOverlay.style.height = '100%';
+        }
+
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                cleanupVideoUrl();
+                currentVideoUrl = URL.createObjectURL(file);
+                videoPreview.src = currentVideoUrl;
+                
+                const loadPromise = new Promise((resolve, reject) => {
+                    videoPreview.addEventListener('loadedmetadata', resolve, { once: true });
+                    videoPreview.addEventListener('error', reject, { once: true });
+                });
+
+                loadPromise.then(() => {
+                    if (videoPreview.duration < 1) {
+                        throw new Error('Video must be at least 1 second long');
+                    }
+                    landing.style.display = 'none';
+                    preview.style.display = 'flex';
+                    timeSlider.value = 0;
+                    endSlider.value = 100;
+                    videoPreview.currentTime = 0;
+                    resetCropOverlay(); 
+                    updateTimeDisplay();
+                }).catch(error => {
+                    alert(error.message || 'Error loading video');
+                    videoPreview.src = '';
+                    cleanupVideoUrl();
+                });
+            }
+        });
+
+        videoPreview.addEventListener('timeupdate', function() {
+            const endTime = (endSlider.value / 100) * videoPreview.duration;
+            
+            if (videoPreview.currentTime >= endTime) {
+                videoPreview.pause();
+                playPauseBtn.innerHTML = '&#9654;';
+            }
+            
+            updateTimeDisplay();
+        });
+
+        let sliderUpdateTimeout;
+        
+        timeSlider.addEventListener('input', function() {
+            const minDistance = (1 / videoPreview.duration) * 100;
+            const startValue = parseFloat(timeSlider.value);
+            const endValue = parseFloat(endSlider.value);
+
+            if (endValue - startValue < minDistance) {
+                timeSlider.value = endValue - minDistance;
+                return;
+            }
+
+            clearTimeout(sliderUpdateTimeout);
+            sliderUpdateTimeout = setTimeout(() => {
+                const startTime = (timeSlider.value / 100) * videoPreview.duration;
+                videoPreview.currentTime = startTime;
+                
+                if (!videoPreview.paused) {
+                    videoPreview.play();
+                }
+            }, 16);
+
+            updateTimeDisplay();
+        });
+
+        endSlider.addEventListener('input', function() {
+            const minDistance = (1 / videoPreview.duration) * 100;
+            const startValue = parseFloat(timeSlider.value);
+            const endValue = parseFloat(endSlider.value);
+
+            if (endValue - startValue < minDistance) {
+                endSlider.value = startValue + minDistance;
+                return;
+            }
+
+            updateTimeDisplay();
+        });
+
+        cropOverlay.addEventListener('mousedown', initDrag);
+        document.addEventListener('mousemove', drag);
+        document.addEventListener('mouseup', stopDrag);
+
+        cropPoints.forEach(point => {
+            point.addEventListener('mousedown', initPointDrag);
+        });
+
+        function initDrag(e) {
+            if (e.button !== 0) return;
+            
+            if (e.target === cropOverlay) {
+                isDragging = true;
+                startX = e.clientX;
+                startY = e.clientY;
+                startLeft = cropOverlay.offsetLeft;
+                startTop = cropOverlay.offsetTop;
+            }
+        }
+
+        function initPointDrag(e) {
+            if (e.button !== 0) return;
+            
+            e.stopPropagation();
+            isDragging = true;
+            currentPoint = e.target;
+            startX = e.clientX;
+            startY = e.clientY;
+            startWidth = cropOverlay.offsetWidth;
+            startHeight = cropOverlay.offsetHeight;
+            startLeft = cropOverlay.offsetLeft;
+            startTop = cropOverlay.offsetTop;
+        }
+
+        function drag(e) {
+            if (!isDragging) return;
+
+            const wrapperRect = cropOverlay.parentElement.getBoundingClientRect();
+            
+            if (currentPoint) {
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+                
+                const point = currentPoint.dataset.point;
+                let newWidth = startWidth;
+                let newHeight = startHeight;
+                let newLeft = startLeft;
+                let newTop = startTop;
+
+                switch(point) {
+                    case 'top-left':
+                        newWidth = Math.min(startWidth - dx, startLeft + startWidth);
+                        newHeight = Math.min(startHeight - dy, startTop + startHeight);
+                        newLeft = Math.max(0, startLeft + dx);
+                        newTop = Math.max(0, startTop + dy);
+                        newWidth = startLeft + startWidth - newLeft;
+                        newHeight = startTop + startHeight - newTop;
+                        break;
+                    case 'top-right':
+                        newWidth = Math.min(startWidth + dx, wrapperRect.width - startLeft);
+                        newHeight = Math.min(startHeight - dy, startTop + startHeight);
+                        newTop = Math.max(0, startTop + dy);
+                        newHeight = startTop + startHeight - newTop;
+                        break;
+                    case 'bottom-left':
+                        newWidth = Math.min(startWidth - dx, startLeft + startWidth);
+                        newHeight = Math.min(startHeight + dy, wrapperRect.height - startTop);
+                        newLeft = Math.max(0, startLeft + dx);
+                        newWidth = startLeft + startWidth - newLeft;
+                        break;
+                    case 'bottom-right':
+                        newWidth = Math.min(startWidth + dx, wrapperRect.width - startLeft);
+                        newHeight = Math.min(startHeight + dy, wrapperRect.height - startTop);
+                        break;
+                }
+
+                const minSize = 50;
+                newWidth = Math.max(minSize, newWidth);
+                newHeight = Math.max(minSize, newHeight);
+
+                if (newLeft + newWidth > wrapperRect.width) {
+                    newWidth = wrapperRect.width - newLeft;
+                }
+                if (newTop + newHeight > wrapperRect.height) {
+                    newHeight = wrapperRect.height - newTop;
+                }
+
+                cropOverlay.style.width = `${newWidth}px`;
+                cropOverlay.style.height = `${newHeight}px`;
+                cropOverlay.style.left = `${newLeft}px`;
+                cropOverlay.style.top = `${newTop}px`;
+            } else {
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+                
+                let newLeft = Math.max(0, Math.min(startLeft + dx, wrapperRect.width - cropOverlay.offsetWidth));
+                let newTop = Math.max(0, Math.min(startTop + dy, wrapperRect.height - cropOverlay.offsetHeight));
+
+                cropOverlay.style.left = `${newLeft}px`;
+                cropOverlay.style.top = `${newTop}px`;
+            }
+        }
+
+        function stopDrag() {
+            isDragging = false;
+            currentPoint = null;
+        }
+
+        cropOverlay.addEventListener('touchstart', e => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const event = new MouseEvent('mousedown', {
+                clientX: touch.clientX,
+                clientY: touch.clientY
+            });
+            initDrag(event);
+        });
+
+        document.addEventListener('touchmove', e => {
+            if (isDragging) {
+                e.preventDefault();
+                const touch = e.touches[0];
+                const event = new MouseEvent('mousemove', {
+                    clientX: touch.clientX,
+                    clientY: touch.clientY
+                });
+                drag(event);
+            }
+        });
+
+        document.addEventListener('touchend', e => {
+            if (isDragging) {
+                e.preventDefault();
+                stopDrag();
+            }
+        });
+
+        document.addEventListener('mouseup', function(e) {
+            if (isDragging) {
+                stopDrag();
+            }
+        });
+
+        window.addEventListener('blur', function() {
+            if (isDragging) {
+                stopDrag();
+            }
+        });
+
+        window.addEventListener('beforeunload', cleanupVideoUrl);
+
+        const downloadBtn = document.getElementById('downloadBtn');
+
+        downloadBtn.addEventListener('click', async function() {
+            downloadBtn.disabled = true;
+            downloadBtn.textContent = 'Processing...';
+
+            try {
+                const { FFmpeg } = await import('https://unpkg.com/@ffmpeg/ffmpeg@0.12.7/dist/esm/index.js');
+                const ffmpeg = new FFmpeg();
+                
+                await ffmpeg.load({
+                    coreURL: 'https://unpkg.com/@ffmpeg/core@0.12.7/dist/esm/ffmpeg-core.js'
+                });
+
+                const videoBlob = await fetch(videoPreview.src).then(r => r.blob());
+                
+                const videoRect = videoPreview.getBoundingClientRect();
+                const cropRect = cropOverlay.getBoundingClientRect();
+                
+                const scaleX = videoPreview.videoWidth / videoRect.width;
+                const scaleY = videoPreview.videoHeight / videoRect.height;
+                
+                const cropX = Math.round((cropRect.left - videoRect.left) * scaleX);
+                const cropY = Math.round((cropRect.top - videoRect.top) * scaleY);
+                const cropWidth = Math.round(cropRect.width * scaleX);
+                const cropHeight = Math.round(cropRect.height * scaleY);
+
+                const startTime = (timeSlider.value / 100) * videoPreview.duration;
+                const endTime = (endSlider.value / 100) * videoPreview.duration;
+                const duration = endTime - startTime;
+
+                await ffmpeg.writeFile('input.webm', new Uint8Array(await videoBlob.arrayBuffer()));
+
+                await ffmpeg.exec([
+                    '-i', 'input.webm',
+                    '-ss', startTime.toString(),
+                    '-t', duration.toString(),
+                    '-filter:v', `crop=${cropWidth}:${cropHeight}:${cropX}:${cropY}`,
+                    '-c:a', 'copy',
+                    'output.mp4'
+                ]);
+
+                const data = await ffmpeg.readFile('output.mp4');
+                
+                const url = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'edited_video.mp4';
+                a.click();
+
+                setTimeout(() => {
+                    URL.revokeObjectURL(url);
+                    ffmpeg.deleteFile('input.webm');
+                    ffmpeg.deleteFile('output.mp4');
+                }, 100);
+
+            } catch (error) {
+                alert('Error processing video: ' + error.message);
+            } finally {
+                downloadBtn.disabled = false;
+                downloadBtn.textContent = 'Download Video';
+            }
+        });
+    </script>
+</body>
+</html>
