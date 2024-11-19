@@ -877,6 +877,7 @@
             border-radius: 4px;
             cursor: pointer;
             outline: none;
+            min-width: 80px;
         }
 
         .format-select:hover {
@@ -910,13 +911,13 @@
         <div class="button-container">
             <button class="upload-button" onclick="document.getElementById('fileInput').click()">Choose Different Video</button>
             <div class="format-select-container">
+                <button class="upload-button" id="downloadBtn">Download Video</button>
                 <select id="formatSelect" class="format-select">
                     <option value="mp4">MP4</option>
                     <option value="webm">WebM</option>
                     <option value="mov">MOV</option>
                     <option value="gif">GIF</option>
                 </select>
-                <button class="upload-button" id="downloadBtn">Download Video</button>
             </div>
         </div>
         <div style="position: relative;">
