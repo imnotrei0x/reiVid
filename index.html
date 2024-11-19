@@ -615,7 +615,16 @@
                 const ffmpeg = new FFmpeg();
                 
                 await ffmpeg.load({
-                    coreURL: 'https://unpkg.com/@ffmpeg/core@0.12.7/dist/esm/ffmpeg-core.js'
+                    coreURL: 'https://unpkg.com/@ffmpeg/core@0.12.7/dist/esm/ffmpeg-core.js',
+                    wasmURL: 'https://unpkg.com/@ffmpeg/core@0.12.7/dist/esm/ffmpeg-core.wasm',
+                    workerURL: 'https://unpkg.com/@ffmpeg/core@0.12.7/dist/esm/ffmpeg-core.worker.js',
+                    logger: ({ message }) => {
+                        console.log('FFmpeg:', message);
+                    },
+                    corePath: undefined,
+                    progress: (progress) => {
+                        downloadBtn.textContent = `Processing: ${(progress.progress * 100).toFixed(0)}%`;
+                    }
                 });
 
                 const videoBlob = await fetch(videoPreview.src).then(r => r.blob());
@@ -661,6 +670,7 @@
                 }, 100);
 
             } catch (error) {
+                console.error('Error:', error);
                 alert('Error processing video: ' + error.message);
             } finally {
                 downloadBtn.disabled = false;
