@@ -610,23 +610,31 @@
 
         const downloadBtn = document.getElementById('downloadBtn');
 
-        const { createFFmpeg, fetchFile } = FFmpeg;
-        
-        const ffmpeg = createFFmpeg({
-            log: true,
-            logger: ({ message }) => console.log(message),
-            progress: ({ ratio }) => {
-                if (downloadBtn) {
-                    downloadBtn.textContent = `Processing: ${(ratio * 100).toFixed(0)}%`;
-                }
+        // Initialize FFmpeg only when needed
+        let ffmpeg = null;
+
+        async function initFFmpeg() {
+            if (!ffmpeg) {
+                const { createFFmpeg, fetchFile } = FFmpeg;
+                ffmpeg = createFFmpeg({
+                    log: true,
+                    logger: ({ message }) => console.log(message),
+                    progress: ({ ratio }) => {
+                        if (downloadBtn) {
+                            downloadBtn.textContent = `Processing: ${(ratio * 100).toFixed(0)}%`;
+                        }
+                    }
+                });
             }
-        });
+            return ffmpeg;
+        }
 
         downloadBtn.addEventListener('click', async function() {
             downloadBtn.disabled = true;
             downloadBtn.textContent = 'Loading FFmpeg...';
 
             try {
+                ffmpeg = await initFFmpeg();
                 if (!ffmpeg.isLoaded()) {
                     await ffmpeg.load();
                 }
