@@ -55,6 +55,6 @@ Additionally, support the FFmpeg project that powers this tool by donating to th
 ---
 
 ## Socials
-- [x] twitter [@imnotrei0x](https://x.com/reiloaded)
+- twitter [@imnotrei0x](https://x.com/reiloaded)
 
 ---
