@@ -2,8 +2,7 @@
 <html>
 <head>
     <title>reiVid</title>
-    <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.7/dist/ffmpeg.min.js"></script>
-    <script src="https://unpkg.com/@ffmpeg/util@0.12.7/dist/util.min.js"></script>
+    <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
     <style>
         body {
             margin: 0;
@@ -611,39 +610,16 @@
             downloadBtn.textContent = 'Processing...';
 
             try {
-                const { FFmpeg } = await import('https://unpkg.com/@ffmpeg/ffmpeg@0.12.7/dist/esm/index.js');
-                const ffmpeg = new FFmpeg();
-                
-                // Configure FFmpeg with proper CORS settings
-                await ffmpeg.load({
-                    coreURL: await toBlobURL(
-                        'https://unpkg.com/@ffmpeg/core@0.12.7/dist/esm/ffmpeg-core.js',
-                        'text/javascript'
-                    ),
-                    wasmURL: await toBlobURL(
-                        'https://unpkg.com/@ffmpeg/core@0.12.7/dist/esm/ffmpeg-core.wasm',
-                        'application/wasm'
-                    ),
-                    workerURL: await toBlobURL(
-                        'https://unpkg.com/@ffmpeg/core@0.12.7/dist/esm/ffmpeg-core.worker.js',
-                        'text/javascript'
-                    ),
-                    logger: ({ message }) => {
-                        console.log('FFmpeg:', message);
-                    },
-                    progress: (progress) => {
-                        downloadBtn.textContent = `Processing: ${(progress.progress * 100).toFixed(0)}%`;
+                const { createFFmpeg, fetchFile } = FFmpeg;
+                const ffmpeg = createFFmpeg({
+                    log: true,
+                    progress: ({ ratio }) => {
+                        downloadBtn.textContent = `Processing: ${(ratio * 100).toFixed(0)}%`;
                     }
                 });
 
-                // Helper function to convert URLs to blob URLs
-                async function toBlobURL(url, type) {
-                    const response = await fetch(url);
-                    const blob = await response.blob();
-                    return URL.createObjectURL(new Blob([blob], { type }));
-                }
+                await ffmpeg.load();
 
-                // Rest of the processing code remains the same
                 const videoBlob = await fetch(videoPreview.src).then(r => r.blob());
                 
                 const videoRect = videoPreview.getBoundingClientRect();
@@ -661,19 +637,23 @@
                 const endTime = (endSlider.value / 100) * videoPreview.duration;
                 const duration = endTime - startTime;
 
-                await ffmpeg.writeFile('input.webm', new Uint8Array(await videoBlob.arrayBuffer()));
+                // Write the file to FFmpeg's file system
+                ffmpeg.FS('writeFile', 'input.webm', await fetchFile(videoBlob));
 
-                await ffmpeg.exec([
+                // Run the FFmpeg command
+                await ffmpeg.run(
                     '-i', 'input.webm',
                     '-ss', startTime.toString(),
                     '-t', duration.toString(),
                     '-filter:v', `crop=${cropWidth}:${cropHeight}:${cropX}:${cropY}`,
                     '-c:a', 'copy',
                     'output.mp4'
-                ]);
+                );
 
-                const data = await ffmpeg.readFile('output.mp4');
+                // Read the result
+                const data = ffmpeg.FS('readFile', 'output.mp4');
                 
+                // Create download link
                 const url = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
                 const a = document.createElement('a');
                 a.href = url;
@@ -683,8 +663,8 @@
                 // Cleanup
                 setTimeout(() => {
                     URL.revokeObjectURL(url);
-                    ffmpeg.deleteFile('input.webm');
-                    ffmpeg.deleteFile('output.mp4');
+                    ffmpeg.FS('unlink', 'input.webm');
+                    ffmpeg.FS('unlink', 'output.mp4');
                 }, 100);
 
             } catch (error) {
