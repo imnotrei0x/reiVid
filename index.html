@@ -371,7 +371,7 @@
                     const url = URL.createObjectURL(processedVideoBlob);
                     const a = document.createElement('a');
                     a.href = url;
-                    a.download = `edited_video_${selectedQuality}.mp4`;
+                    a.download = `edited_video.mp4`;
                     document.body.appendChild(a);
                     a.click();
                     document.body.removeChild(a);
@@ -439,7 +439,7 @@
                     
                     const a = document.createElement('a');
                     a.href = url;
-                    a.download = `edited_video_${selectedQuality}.mp4`;
+                    a.download = `edited_video.mp4`;
                     document.body.appendChild(a);
                     a.click();
                     document.body.removeChild(a);
