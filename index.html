@@ -467,6 +467,41 @@
             timeSlider.addEventListener('change', () => processedVideoBlob = null);
             endSlider.addEventListener('change', () => processedVideoBlob = null);
             cropOverlay.addEventListener('mouseup', () => processedVideoBlob = null);
+
+            const volumeBtn = document.getElementById('volumeBtn');
+            const volumeSlider = document.getElementById('volumeSlider');
+            let previousVolume = 1;
+
+            volumeSlider.addEventListener('input', function() {
+                const volume = this.value / 100;
+                videoPreview.volume = volume;
+                updateVolumeIcon(volume);
+            });
+
+            volumeBtn.addEventListener('click', function() {
+                if (videoPreview.volume > 0) {
+                    previousVolume = videoPreview.volume;
+                    videoPreview.volume = 0;
+                    volumeSlider.value = 0;
+                } else {
+                    videoPreview.volume = previousVolume;
+                    volumeSlider.value = previousVolume * 100;
+                }
+                updateVolumeIcon(videoPreview.volume);
+            });
+
+            function updateVolumeIcon(volume) {
+                if (volume === 0) {
+                    volumeBtn.textContent = '🔇';
+                } else if (volume < 0.5) {
+                    volumeBtn.textContent = '🔉';
+                } else {
+                    volumeBtn.textContent = '🔊';
+                }
+            }
+
+            videoPreview.volume = volumeSlider.value / 100;
+            updateVolumeIcon(videoPreview.volume);
         });
     </script>
     <style>
@@ -822,6 +857,66 @@
         .quality-btn:hover {
             background: #3a3a3a;
         }
+
+        .volume-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-left: 15px;
+        }
+
+        .volume-btn {
+            background: transparent;
+            border: none;
+            color: #fff;
+            cursor: pointer;
+            padding: 5px;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.1s;
+            outline: none;
+        }
+
+        .volume-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .volume-slider {
+            width: 80px;
+            height: 4px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+            outline: none;
+        }
+
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #007bff;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .volume-slider::-moz-range-thumb {
+            width: 12px;
+            height: 12px;
+            border: none;
+            border-radius: 50%;
+            background: #007bff;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .volume-slider::-webkit-slider-thumb:hover,
+        .volume-slider::-moz-range-thumb:hover {
+            transform: scale(1.2);
+        }
     </style>
 </head>
 <body>
@@ -871,6 +966,10 @@
                 <input type="range" class="end-slider" id="endSlider" value="100" min="0" max="100" step="0.1">
             </div>
             <span class="time-display" id="timeDisplay">0:00 / 0:00</span>
+            <div class="volume-control">
+                <button class="volume-btn" id="volumeBtn">🔊</button>
+                <input type="range" class="volume-slider" id="volumeSlider" value="100" min="0" max="100" step="1">
+            </div>
         </div>
     </div>
 </body>
