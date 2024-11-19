@@ -31,8 +31,8 @@ This project is open source under the [MIT License](./LICENSE).
 This project uses **FFmpeg** via the [@ffmpeg/ffmpeg](https://github.com/ffmpegwasm/ffmpeg.wasm) library.
 
 FFmpeg is a free, open-source multimedia framework licensed under:
-- [GPLv3](https://www.gnu.org/licenses/gpl-3.0.html) or
-- [LGPLv3](https://www.gnu.org/licenses/lgpl-3.0.html) (depending on the build).
+- [GPLv3](https://www.gnu.org/licenses/gpl-3.0.html) 
+- [LGPLv3](https://www.gnu.org/licenses/lgpl-3.0.html)
 
 The source code for FFmpeg is available at [ffmpeg.org](https://ffmpeg.org/).
 
@@ -51,3 +51,10 @@ Contributions are welcome! If you have ideas, suggestions, or find bugs, feel fr
 This project is free to use. If you find it useful, consider supporting its development by donating through the [donation link here](#).
 
 Additionally, support the FFmpeg project that powers this tool by donating to them at [https://www.ffmpeg.org/donations.html](https://www.ffmpeg.org/donations.html).
+
+---
+
+## Socials
+- [x] twitter [@imnotrei0x](https://x.com/reiloaded)
+
+---
