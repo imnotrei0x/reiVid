@@ -37,19 +37,14 @@
                     'video/ogg',
                     'video/quicktime',
                     'video/x-matroska', 
-                    'video/x-msvideo',   
-                    'image/gif'         
+                    'video/x-msvideo'   
                 ];
                 
                 if (!supportedFormats.includes(file.type)) {
-                    alert('Please use a supported format (MP4, WebM, OGG, MOV, MKV, AVI, or GIF)');
+                    alert('Please use a supported format (MP4, WebM, OGG, MOV, MKV, or AVI)');
                     return false;
                 }
                 return true;
-            }
-
-            function isGif(file) {
-                return file.type === 'image/gif';
             }
 
             async function initFFmpeg() {
@@ -157,8 +152,6 @@
                         currentVideoUrl = URL.createObjectURL(file);
                         videoPreview.src = currentVideoUrl;
                         
-                        videoPreview.loop = isGif(file);
-                        
                         const loadPromise = new Promise((resolve, reject) => {
                             videoPreview.addEventListener('loadedmetadata', resolve, { once: true });
                             videoPreview.addEventListener('error', reject, { once: true });
@@ -166,18 +159,13 @@
 
                         await loadPromise;
                         
-                        if (videoPreview.duration < 1 && !isGif(file)) {
+                        if (videoPreview.duration < 1) {
                             throw new Error('Video must be at least 1 second long');
                         }
                         
                         const formatSelect = document.getElementById('formatSelect');
-                        if (isGif(file)) {
-                            formatSelect.value = 'gif';
-                            formatSelect.disabled = true; 
-                        } else {
-                            formatSelect.value = 'mp4'; 
-                            formatSelect.disabled = false;
-                        }
+                        formatSelect.value = 'mp4';
+                        formatSelect.disabled = false;
                         
                         landing.style.display = 'none';
                         preview.style.display = 'flex';
@@ -405,14 +393,12 @@
             });
 
             downloadBtn.addEventListener('click', async function() {
-                const format = document.getElementById('formatSelect').value;
-                const buttonText = format.toUpperCase() === 'GIF' ? 'Download GIF' : 'Download Video';
-                
                 if (processedVideoBlob) {
+                    const format = document.getElementById('formatSelect').value;
                     const url = URL.createObjectURL(processedVideoBlob);
                     const a = document.createElement('a');
                     a.href = url;
-                    a.download = format.toUpperCase() === 'GIF' ? 'edited_animation.gif' : `edited_video.${format}`;
+                    a.download = `edited_video.${format}`;
                     document.body.appendChild(a);
                     a.click();
                     document.body.removeChild(a);
@@ -524,7 +510,7 @@
                     processedVideoBlob = null;
                 } finally {
                     downloadBtn.disabled = false;
-                    downloadBtn.textContent = buttonText;
+                    downloadBtn.textContent = 'Download Video';
                 }
             });
 
@@ -604,8 +590,7 @@
             });
 
             document.getElementById('formatSelect').addEventListener('change', function() {
-                const format = this.value;
-                downloadBtn.textContent = format.toUpperCase() === 'GIF' ? 'Download GIF' : 'Download Video';
+                processedVideoBlob = null;
             });
         });
     </script>
@@ -871,16 +856,16 @@
 
         .button-container {
             display: flex;
-            justify-content: space-between;
-            width: 100%;
+            align-items: center;
             gap: 1rem;
             margin-bottom: 2rem;
         }
 
         .download-container {
             display: flex;
-            gap: 0.5rem;
             align-items: center;
+            gap: 0.5rem;
+            flex-direction: row-reverse;
         }
 
         .format-select {
@@ -1033,7 +1018,6 @@
                     <option value="mp4">MP4</option>
                     <option value="webm">WebM</option>
                     <option value="mov">MOV</option>
-                    <option value="gif">GIF</option>
                 </select>
                 <button class="upload-button" id="downloadBtn">Download Video</button>
             </div>
