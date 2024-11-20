@@ -48,7 +48,9 @@ Contributions are welcome! If you have ideas, suggestions, or find bugs, feel fr
 ---
 
 ## Support
-This project is free to use. If you find it useful, consider supporting its development by donating through the [donation link here](#).
+This project is free to use. 
+
+If you find it useful, consider supporting its development by donating through the [donation link here](https://reivid.vercel.app/donate.html).
 
 Additionally, support the FFmpeg project that powers this tool by donating to them at [https://www.ffmpeg.org/donations.html](https://www.ffmpeg.org/donations.html).
 
