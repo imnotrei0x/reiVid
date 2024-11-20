@@ -681,6 +681,17 @@
             document.getElementById('formatSelect').addEventListener('change', function() {
                 processedVideoBlob = null;
             });
+
+            function resetCropOverlay() {
+                if (!cropOverlay) return;
+                
+                cropOverlay.style.width = '100%';
+                cropOverlay.style.height = '100%';
+                cropOverlay.style.top = '0';
+                cropOverlay.style.left = '0';
+                
+                cropOverlay.style.transform = 'none';
+            }
         });
     </script>
     <style>
