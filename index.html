@@ -225,6 +225,7 @@
                     playPauseBtn.innerHTML = '&#9654;';
                 }
                 
+                timeSlider.value = (videoPreview.currentTime / videoPreview.duration) * 100;
                 updateTimeDisplay();
             });
 
