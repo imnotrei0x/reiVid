@@ -643,39 +643,55 @@
             updateVolumeIcon(videoPreview.volume);
 
             document.body.addEventListener('dragover', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                document.body.classList.add('drag-over');
+                if (landing.style.display !== 'none') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    document.body.classList.add('drag-over');
+                }
             });
 
             document.body.addEventListener('dragleave', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                if (e.target === document.body) {
-                    document.body.classList.remove('drag-over');
+                if (landing.style.display !== 'none') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (e.target === document.body) {
+                        document.body.classList.remove('drag-over');
+                    }
                 }
             });
 
             document.body.addEventListener('drop', async function(e) {
+                if (landing.style.display !== 'none') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    document.body.classList.remove('drag-over');
+
+                    const files = e.dataTransfer.files;
+                    if (files.length > 0) {
+                        const file = files[0];
+                        
+                        if (!file.type.startsWith('video/') || !isValidVideoFile(file)) {
+                            return;
+                        }
+
+                        const dataTransfer = new DataTransfer();
+                        dataTransfer.items.add(file);
+                        fileInput.files = dataTransfer.files;
+
+                        const event = new Event('change');
+                        fileInput.dispatchEvent(event);
+                    }
+                }
+            });
+
+            preview.addEventListener('dragover', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
-                document.body.classList.remove('drag-over');
+            });
 
-                const files = e.dataTransfer.files;
-                if (files.length > 0) {
-                    const file = files[0];
-                    
-                    if (!file.type.startsWith('video/') || !isValidVideoFile(file)) {
-                        return;
-                    }
-
-                    const dataTransfer = new DataTransfer();
-                    dataTransfer.items.add(file);
-                    fileInput.files = dataTransfer.files;
-
-                    const event = new Event('change');
-                    fileInput.dispatchEvent(event);
-                }
+            preview.addEventListener('drop', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
             });
 
             document.getElementById('formatSelect').addEventListener('change', function() {
