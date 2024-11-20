@@ -393,8 +393,9 @@
             });
 
             downloadBtn.addEventListener('click', async function() {
+                const format = document.getElementById('formatSelect').value;
+                
                 if (processedVideoBlob) {
-                    const format = document.getElementById('formatSelect').value;
                     const url = URL.createObjectURL(processedVideoBlob);
                     const a = document.createElement('a');
                     a.href = url;
@@ -410,6 +411,10 @@
                 downloadBtn.textContent = 'Processing...';
 
                 try {
+                    if (!window.ffmpeg) {
+                        await initFFmpeg();
+                    }
+
                     const ffmpeg = window.ffmpeg;
                     if (!ffmpeg) {
                         throw new Error('FFmpeg not initialized');
@@ -419,8 +424,6 @@
                         alert('Please upload a video first');
                         return;
                     }
-
-                    downloadBtn.textContent = 'Processing...';
 
                     const videoBlob = await fetch(videoPreview.src).then(r => r.blob());
                     const { fetchFile } = FFmpeg;
@@ -441,7 +444,6 @@
                     const endTime = (endSlider.value / 100) * videoPreview.duration;
                     const duration = endTime - startTime;
 
-                    const format = document.getElementById('formatSelect').value;
                     const outputFileName = `output.${format}`;
 
                     const ffmpegArgs = [
@@ -466,7 +468,7 @@
                                 '-c:a', 'pcm_s16le'
                             );
                             break;
-                        default: 
+                        default:
                             ffmpegArgs.push(
                                 '-c:v', 'libx264',
                                 '-preset', 'slow',
@@ -502,7 +504,6 @@
                         } catch (e) {
                             console.error('Cleanup error:', e);
                         }
-                        cleanupFFmpeg();
                     }, 100);
 
                 } catch (error) {
