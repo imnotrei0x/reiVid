@@ -405,11 +405,14 @@
             });
 
             downloadBtn.addEventListener('click', async function() {
+                const format = document.getElementById('formatSelect').value;
+                const buttonText = format.toUpperCase() === 'GIF' ? 'Download GIF' : 'Download Video';
+                
                 if (processedVideoBlob) {
                     const url = URL.createObjectURL(processedVideoBlob);
                     const a = document.createElement('a');
                     a.href = url;
-                    a.download = `edited_video.mp4`;
+                    a.download = format.toUpperCase() === 'GIF' ? 'edited_animation.gif' : `edited_video.${format}`;
                     document.body.appendChild(a);
                     a.click();
                     document.body.removeChild(a);
@@ -418,7 +421,7 @@
                 }
 
                 downloadBtn.disabled = true;
-                downloadBtn.textContent = 'Loading FFmpeg...';
+                downloadBtn.textContent = 'Processing...';
 
                 try {
                     const ffmpeg = window.ffmpeg;
@@ -521,7 +524,7 @@
                     processedVideoBlob = null;
                 } finally {
                     downloadBtn.disabled = false;
-                    downloadBtn.textContent = 'Download Video';
+                    downloadBtn.textContent = buttonText;
                 }
             });
 
@@ -598,6 +601,11 @@
                     const event = new Event('change');
                     fileInput.dispatchEvent(event);
                 }
+            });
+
+            document.getElementById('formatSelect').addEventListener('change', function() {
+                const format = this.value;
+                downloadBtn.textContent = format.toUpperCase() === 'GIF' ? 'Download GIF' : 'Download Video';
             });
         });
     </script>
@@ -863,8 +871,36 @@
 
         .button-container {
             display: flex;
+            justify-content: space-between;
+            width: 100%;
             gap: 1rem;
             margin-bottom: 2rem;
+        }
+
+        .download-container {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .format-select {
+            padding: 0.5rem 1rem;
+            font-size: 1.2rem;
+            background: #2a2a2a;
+            color: white;
+            border: 1px solid #3a3a3a;
+            border-radius: 8px;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .format-select:hover {
+            background: #3a3a3a;
+        }
+
+        .format-select:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
 
         .description {
@@ -975,17 +1011,6 @@
         .drag-over {
             background: #2a2a2a !important;
         }
-
-        .format-select {
-            padding: 0.5rem 1rem;
-            font-size: 1.2rem;
-            background: #2a2a2a;
-            color: white;
-            border: 1px solid #3a3a3a;
-            border-radius: 8px;
-            cursor: pointer;
-            margin-right: 1rem;
-        }
     </style>
 </head>
 <body>
@@ -1003,7 +1028,15 @@
     <div class="video-preview-container" id="preview">
         <div class="button-container">
             <button class="upload-button" onclick="document.getElementById('fileInput').click()">Choose Different Video</button>
-            <button class="upload-button" id="downloadBtn">Download Video</button>
+            <div class="download-container">
+                <select id="formatSelect" class="format-select">
+                    <option value="mp4">MP4</option>
+                    <option value="webm">WebM</option>
+                    <option value="mov">MOV</option>
+                    <option value="gif">GIF</option>
+                </select>
+                <button class="upload-button" id="downloadBtn">Download Video</button>
+            </div>
         </div>
         <div style="position: relative;">
             <div class="video-wrapper">
@@ -1030,11 +1063,6 @@
                 <input type="range" class="volume-slider" id="volumeSlider" value="100" min="0" max="100" step="1">
             </div>
         </div>
-        <select id="formatSelect" class="format-select">
-            <option value="mp4">MP4</option>
-            <option value="webm">WebM</option>
-            <option value="mov">MOV</option>
-        </select>
     </div>
 </body>
 </html>
