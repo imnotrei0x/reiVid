@@ -103,7 +103,81 @@
                 }
             }
 
-            playPauseBtn.addEventListener('click', function() {
+            function initVideoControls() {
+                // Reset controls state
+                playPauseBtn.innerHTML = '&#9654;';
+                timeSlider.value = 0;
+                endSlider.value = 100;
+                videoPreview.currentTime = 0;
+                
+                // Remove existing listeners to prevent duplicates
+                videoPreview.removeEventListener('timeupdate', handleTimeUpdate);
+                timeSlider.removeEventListener('input', handleTimeSliderInput);
+                endSlider.removeEventListener('input', handleEndSliderInput);
+                playPauseBtn.removeEventListener('click', handlePlayPause);
+                
+                // Add event listeners
+                videoPreview.addEventListener('timeupdate', handleTimeUpdate);
+                timeSlider.addEventListener('input', handleTimeSliderInput);
+                endSlider.addEventListener('input', handleEndSliderInput);
+                playPauseBtn.addEventListener('click', handlePlayPause);
+                
+                // Reset volume
+                videoPreview.volume = volumeSlider.value / 100;
+                updateVolumeIcon(videoPreview.volume);
+                
+                updateTimeDisplay();
+            }
+
+            function handleTimeUpdate() {
+                const endTime = (endSlider.value / 100) * videoPreview.duration;
+                
+                if (videoPreview.currentTime >= endTime) {
+                    videoPreview.pause();
+                    playPauseBtn.innerHTML = '&#9654;';
+                }
+                
+                timeSlider.value = (videoPreview.currentTime / videoPreview.duration) * 100;
+                updateTimeDisplay();
+            }
+
+            function handleTimeSliderInput() {
+                const minDistance = (1 / videoPreview.duration) * 100;
+                const startValue = parseFloat(timeSlider.value);
+                const endValue = parseFloat(endSlider.value);
+
+                if (endValue - startValue < minDistance) {
+                    timeSlider.value = endValue - minDistance;
+                    return;
+                }
+
+                clearTimeout(sliderUpdateTimeout);
+                sliderUpdateTimeout = setTimeout(() => {
+                    const startTime = (timeSlider.value / 100) * videoPreview.duration;
+                    videoPreview.currentTime = startTime;
+                    
+                    if (!videoPreview.paused) {
+                        videoPreview.play();
+                    }
+                }, 16);
+
+                updateTimeDisplay();
+            }
+
+            function handleEndSliderInput() {
+                const minDistance = (1 / videoPreview.duration) * 100;
+                const startValue = parseFloat(timeSlider.value);
+                const endValue = parseFloat(endSlider.value);
+
+                if (endValue - startValue < minDistance) {
+                    endSlider.value = startValue + minDistance;
+                    return;
+                }
+
+                updateTimeDisplay();
+            }
+
+            function handlePlayPause() {
                 if (videoPreview.paused) {
                     const startTime = (timeSlider.value / 100) * videoPreview.duration;
                     if (Math.abs(videoPreview.currentTime - startTime) > 0.1) {
@@ -115,13 +189,6 @@
                     videoPreview.pause();
                     playPauseBtn.innerHTML = '&#9654;';
                 }
-            });
-
-            function resetCropOverlay() {
-                cropOverlay.style.top = '0';
-                cropOverlay.style.left = '0';
-                cropOverlay.style.width = '100%';
-                cropOverlay.style.height = '100%';
             }
 
             fileInput.addEventListener('change', async function(e) {
@@ -169,12 +236,9 @@
                         
                         landing.style.display = 'none';
                         preview.style.display = 'flex';
-                        timeSlider.value = 0;
-                        endSlider.value = 100;
-                        videoPreview.currentTime = 0;
-                        playPauseBtn.innerHTML = '&#9654;';
                         
                         resetCropOverlay();
+                        initVideoControls(); // Initialize controls for new video
                         
                         videoPreview.volume = volumeSlider.value / 100;
                         updateVolumeIcon(videoPreview.volume);
