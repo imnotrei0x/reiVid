@@ -30,6 +30,28 @@
             let selectedQuality = 'original';
             let processedVideoBlob = null;
 
+            function isValidVideoFile(file) {
+                const supportedFormats = [
+                    'video/mp4',
+                    'video/webm',
+                    'video/ogg',
+                    'video/quicktime',
+                    'video/x-matroska', 
+                    'video/x-msvideo',   
+                    'image/gif'         
+                ];
+                
+                if (!supportedFormats.includes(file.type)) {
+                    alert('Please use a supported format (MP4, WebM, OGG, MOV, MKV, AVI, or GIF)');
+                    return false;
+                }
+                return true;
+            }
+
+            function isGif(file) {
+                return file.type === 'image/gif';
+            }
+
             async function initFFmpeg() {
                 try {
                     if (typeof FFmpeg === 'undefined') {
@@ -112,6 +134,11 @@
                 
                 const file = e.target.files[0];
                 if (file) {
+                    if (!isValidVideoFile(file)) {
+                        fileInput.value = '';
+                        return;
+                    }
+
                     const maxSize = 100 * 1024 * 1024;
                     if (file.size > maxSize) {
                         alert('File is too large. Maximum size is 100MB');
@@ -130,6 +157,8 @@
                         currentVideoUrl = URL.createObjectURL(file);
                         videoPreview.src = currentVideoUrl;
                         
+                        videoPreview.loop = isGif(file);
+                        
                         const loadPromise = new Promise((resolve, reject) => {
                             videoPreview.addEventListener('loadedmetadata', resolve, { once: true });
                             videoPreview.addEventListener('error', reject, { once: true });
@@ -137,8 +166,17 @@
 
                         await loadPromise;
                         
-                        if (videoPreview.duration < 1) {
+                        if (videoPreview.duration < 1 && !isGif(file)) {
                             throw new Error('Video must be at least 1 second long');
+                        }
+                        
+                        const formatSelect = document.getElementById('formatSelect');
+                        if (isGif(file)) {
+                            formatSelect.value = 'gif';
+                            formatSelect.disabled = true; 
+                        } else {
+                            formatSelect.value = 'mp4'; 
+                            formatSelect.disabled = false;
                         }
                         
                         landing.style.display = 'none';
@@ -150,14 +188,14 @@
                         updateTimeDisplay();
                         
                     } catch (error) {
-                        alert(error.message || 'Error loading video');
+                        alert(error.message || 'Error loading file');
                         videoPreview.src = '';
                         cleanupVideoUrl();
                         cleanupFFmpeg();
                         fileInput.value = '';
                     } finally {
                         uploadButton.disabled = false;
-                        uploadButton.textContent = 'Select Video';
+                        uploadButton.textContent = 'Select File';
                     }
                 } else {
                     cleanupFFmpeg();
@@ -414,32 +452,55 @@
                     const endTime = (endSlider.value / 100) * videoPreview.duration;
                     const duration = endTime - startTime;
 
+                    const format = document.getElementById('formatSelect').value;
+                    const outputFileName = `output.${format}`;
+
                     const ffmpegArgs = [
                         '-i', 'input.webm',
                         '-ss', startTime.toString(),
                         '-t', duration.toString(),
-                        '-filter:v', `crop=${cropWidth}:${cropHeight}:${cropX}:${cropY}`,
-                        '-c:v', 'libx264',
-                        '-preset', 'slow',
-                        '-crf', '18',
-                        '-profile:v', 'high',
-                        '-level', '4.1',
-                        '-movflags', '+faststart',
-                        '-c:a', 'aac',
-                        '-b:a', '192k',
-                        '-strict', 'experimental',
-                        'output.mp4'
+                        '-filter:v', `crop=${cropWidth}:${cropHeight}:${cropX}:${cropY}`
                     ];
+
+                    switch(format) {
+                        case 'webm':
+                            ffmpegArgs.push(
+                                '-c:v', 'libvpx-vp9',
+                                '-b:v', '2M',
+                                '-c:a', 'libopus'
+                            );
+                            break;
+                        case 'mov':
+                            ffmpegArgs.push(
+                                '-c:v', 'prores',
+                                '-profile:v', '3',
+                                '-c:a', 'pcm_s16le'
+                            );
+                            break;
+                        default: 
+                            ffmpegArgs.push(
+                                '-c:v', 'libx264',
+                                '-preset', 'slow',
+                                '-crf', '18',
+                                '-profile:v', 'high',
+                                '-level', '4.1',
+                                '-movflags', '+faststart',
+                                '-c:a', 'aac',
+                                '-b:a', '192k'
+                            );
+                    }
+
+                    ffmpegArgs.push(outputFileName);
 
                     await ffmpeg.run(...ffmpegArgs);
 
-                    const data = ffmpeg.FS('readFile', 'output.mp4');
-                    processedVideoBlob = new Blob([data.buffer], { type: 'video/mp4' });
+                    const data = ffmpeg.FS('readFile', outputFileName);
+                    processedVideoBlob = new Blob([data.buffer], { type: `video/${format}` });
                     const url = URL.createObjectURL(processedVideoBlob);
                     
                     const a = document.createElement('a');
                     a.href = url;
-                    a.download = `edited_video.mp4`;
+                    a.download = `edited_video.${format}`;
                     document.body.appendChild(a);
                     a.click();
                     document.body.removeChild(a);
@@ -448,7 +509,7 @@
                         URL.revokeObjectURL(url);
                         try {
                             ffmpeg.FS('unlink', 'input.webm');
-                            ffmpeg.FS('unlink', 'output.mp4');
+                            ffmpeg.FS('unlink', outputFileName);
                         } catch (e) {
                             console.error('Cleanup error:', e);
                         }
@@ -526,8 +587,7 @@
                 if (files.length > 0) {
                     const file = files[0];
                     
-                    if (!file.type.startsWith('video/')) {
-                        alert('Please drop a video file');
+                    if (!file.type.startsWith('video/') || !isValidVideoFile(file)) {
                         return;
                     }
 
@@ -915,6 +975,17 @@
         .drag-over {
             background: #2a2a2a !important;
         }
+
+        .format-select {
+            padding: 0.5rem 1rem;
+            font-size: 1.2rem;
+            background: #2a2a2a;
+            color: white;
+            border: 1px solid #3a3a3a;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-right: 1rem;
+        }
     </style>
 </head>
 <body>
@@ -959,6 +1030,11 @@
                 <input type="range" class="volume-slider" id="volumeSlider" value="100" min="0" max="100" step="1">
             </div>
         </div>
+        <select id="formatSelect" class="format-select">
+            <option value="mp4">MP4</option>
+            <option value="webm">WebM</option>
+            <option value="mov">MOV</option>
+        </select>
     </div>
 </body>
 </html>
