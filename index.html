@@ -157,7 +157,7 @@
                         fileInput.value = '';
                     } finally {
                         uploadButton.disabled = false;
-                        uploadButton.textContent = 'Upload Video';
+                        uploadButton.textContent = 'Select Video';
                     }
                 } else {
                     cleanupFFmpeg();
@@ -502,6 +502,43 @@
 
             videoPreview.volume = volumeSlider.value / 100;
             updateVolumeIcon(videoPreview.volume);
+
+            document.body.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                document.body.classList.add('drag-over');
+            });
+
+            document.body.addEventListener('dragleave', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (e.target === document.body) {
+                    document.body.classList.remove('drag-over');
+                }
+            });
+
+            document.body.addEventListener('drop', async function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                document.body.classList.remove('drag-over');
+
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    const file = files[0];
+                    
+                    if (!file.type.startsWith('video/')) {
+                        alert('Please drop a video file');
+                        return;
+                    }
+
+                    const dataTransfer = new DataTransfer();
+                    dataTransfer.items.add(file);
+                    fileInput.files = dataTransfer.files;
+
+                    const event = new Event('change');
+                    fileInput.dispatchEvent(event);
+                }
+            });
         });
     </script>
     <style>
@@ -867,6 +904,17 @@
         .volume-slider::-moz-range-thumb:hover {
             transform: scale(1.2);
         }
+
+        .drop-text {
+            font-size: 1rem;
+            color: #888888;
+            margin-top: -1.5rem;
+            text-align: center;
+        }
+
+        .drag-over {
+            background: #2a2a2a !important;
+        }
     </style>
 </head>
 <body>
@@ -876,8 +924,9 @@
             <h1>reiVid</h1>
         </div>
         <p class="description">trim and crop videos in your browser</p>
-        <button class="upload-button" onclick="document.getElementById('fileInput').click()">Upload Video</button>
-        <input type="file" id="fileInput" accept="video/*">
+        <button class="upload-button" onclick="document.getElementById('fileInput').click()">Select Video</button>
+        <input type="file" id="fileInput" accept="video/*" style="display: none;">
+        <p class="drop-text">or drop a video anywhere</p>
     </div>
 
     <div class="video-preview-container" id="preview">
