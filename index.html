@@ -172,8 +172,35 @@
                         timeSlider.value = 0;
                         endSlider.value = 100;
                         videoPreview.currentTime = 0;
+                        playPauseBtn.innerHTML = '&#9654;';
+                        
                         resetCropOverlay();
+                        
+                        videoPreview.volume = volumeSlider.value / 100;
+                        updateVolumeIcon(videoPreview.volume);
+                        
+                        cropPoints.forEach(point => {
+                            point.removeEventListener('mousedown', initPointDrag);
+                            point.addEventListener('mousedown', initPointDrag);
+                        });
+                        
+                        cropOverlay.removeEventListener('mousedown', initDrag);
+                        cropOverlay.addEventListener('mousedown', initDrag);
+                        
                         updateTimeDisplay();
+                        
+                        endSlider.addEventListener('input', function() {
+                            const minDistance = (1 / videoPreview.duration) * 100;
+                            const startValue = parseFloat(timeSlider.value);
+                            const endValue = parseFloat(endSlider.value);
+
+                            if (endValue - startValue < minDistance) {
+                                endSlider.value = startValue + minDistance;
+                                return;
+                            }
+
+                            updateTimeDisplay();
+                        });
                         
                     } catch (error) {
                         alert(error.message || 'Error loading file');
