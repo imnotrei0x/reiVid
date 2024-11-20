@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>terms</title>
+    <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" href="logo.png">
+    <style>
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: #1a1a1a;
+            color: white;
+            font-family: Arial, sans-serif;
+            padding: 2rem;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+        }
+
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        p, ul {
+            color: #cccccc;
+            margin-bottom: 1rem;
+        }
+
+        ul {
+            padding-left: 1.5rem;
+        }
+
+        li {
+            margin-bottom: 0.5rem;
+        }
+
+        /* Add navbar styles */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            align-items: center;
+            padding: 1rem 2rem;
+            background: #1a1a1a;
+            z-index: 1000;
+            border-bottom: 1px solid #2a2a2a;
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            text-decoration: none;
+            color: white;
+        }
+
+        .nav-brand img {
+            width: 32px;
+            height: auto;
+        }
+
+        .nav-brand h2 {
+            font-size: 1.5rem;
+            margin: 0;
+        }
+
+        .nav-links {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 2rem;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            font-size: 1.1rem;
+            transition: color 0.2s ease;
+            text-transform: lowercase;
+        }
+
+        .nav-links a:hover {
+            color: #007bff;
+        }
+
+        /* Adjust body padding for navbar */
+        body {
+            padding-top: 5rem;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="/" class="nav-brand">
+            <img src="logo.png" alt="reiVid">
+            <h2>reiVid</h2>
+        </a>
+        <div class="nav-links">
+            <a href="/">home</a>
+            <a href="/about.html">about</a>
+            <a href="/donate.html">donate</a>
+            <a href="/terms.html">terms</a>
+            <a href="/privacy.html">privacy</a>
+        </div>
+    </nav>
+    <div class="container">
+        <h1>terms of service</h1>
+
+        <h2>overview</h2>
+        <p>reiVid is a free and open-source web-based video editing tool by reiLoaded. By using this service, you agree to these terms.</p>
+
+        <h2>service description</h2>
+        <p>reiVid provides browser-based video editing capabilities using FFmpeg.wasm. All processing occurs client-side; we do not store or transmit your videos to any servers.</p>
+
+        <h2>open source</h2>
+        <ul>
+            <li>reiVid is open source software, available under the MIT License</li>
+            <li>The source code is available at <a href="https://github.com/imnotrei0x/reiVid" style="color: #007bff;">github.com/imnotrei0x/reiVid</a></li>
+            <li>We use FFmpeg.wasm, which is licensed under LGPL</li>
+            <li>Contributions are welcome under the project's guidelines</li>
+        </ul>
+
+        <h2>user responsibilities</h2>
+        <ul>
+            <li>You are responsible for the content you process using reiVid</li>
+            <li>You agree not to use reiVid for any illegal purposes</li>
+            <li>You understand that there are file size limitations (100MB maximum)</li>
+            <li>You acknowledge that processing speed depends on your device's capabilities</li>
+        </ul>
+
+        <h2>privacy</h2>
+        <ul>
+            <li>All video processing occurs in your browser using FFmpeg.wasm</li>
+            <li>We do not collect, store, or transmit your videos</li>
+            <li>We do not track user behavior or collect personal information</li>
+            <li>No data leaves your browser during video processing</li>
+        </ul>
+
+        <h2>limitations</h2>
+        <ul>
+            <li>reiVid is provided "as is" without any warranties</li>
+            <li>We are not responsible for any damages or losses resulting from use of the service</li>
+            <li>Browser compatibility and performance may vary</li>
+            <li>We reserve the right to modify or terminate the service at any time</li>
+        </ul>
+
+        <h2>third-party software</h2>
+        <ul>
+            <li>reiVid uses FFmpeg.wasm for video processing</li>
+            <li>FFmpeg is licensed under the LGPL</li>
+            <li>Other dependencies are listed in our GitHub repository</li>
+        </ul>
+
+        <h2>intellectual property</h2>
+        <p>While reiVid's code is open source under the MIT License, the reiVid name and logo are protected trademarks of reiLoaded. FFmpeg and other third-party software retain their respective licenses.</p>
+
+        <h2>contact</h2>
+        <ul>
+            <li>GitHub: <a href="https://github.com/imnotrei0x" style="color: #007bff;">@imnotrei0x</a></li>
+            <li>Twitter: <a href="https://x.com/reiLoaded" style="color: #007bff;">@reiLoaded</a></li>
+        </ul>
+
+        <h2>changes to terms</h2>
+        <p>We reserve the right to modify these terms at any time. Continued use of reiVid constitutes acceptance of updated terms.</p>
+    </div>
+</body>
+</html> 

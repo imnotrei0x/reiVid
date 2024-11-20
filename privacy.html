@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>privacy</title>
+    <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" href="logo.png">
+    <style>
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: #1a1a1a;
+            color: white;
+            font-family: Arial, sans-serif;
+            padding: 2rem;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+        }
+
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        p, ul {
+            color: #cccccc;
+            margin-bottom: 1rem;
+        }
+
+        ul {
+            padding-left: 1.5rem;
+        }
+
+        li {
+            margin-bottom: 0.5rem;
+        }
+
+        a {
+            color: #007bff;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        /* Add navbar styles */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            align-items: center;
+            padding: 1rem 2rem;
+            background: #1a1a1a;
+            z-index: 1000;
+            border-bottom: 1px solid #2a2a2a;
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            text-decoration: none;
+            color: white;
+        }
+
+        .nav-brand img {
+            width: 32px;
+            height: auto;
+        }
+
+        .nav-brand h2 {
+            font-size: 1.5rem;
+            margin: 0;
+        }
+
+        .nav-links {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 2rem;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            font-size: 1.1rem;
+            transition: color 0.2s ease;
+            text-transform: lowercase;
+        }
+
+        .nav-links a:hover {
+            color: #007bff;
+        }
+
+        /* Adjust body padding for navbar */
+        body {
+            padding-top: 5rem;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="/" class="nav-brand">
+            <img src="logo.png" alt="reiVid">
+            <h2>reiVid</h2>
+        </a>
+        <div class="nav-links">
+            <a href="/">home</a>
+            <a href="/about.html">about</a>
+            <a href="/donate.html">donate</a>
+            <a href="/terms.html">terms</a>
+            <a href="/privacy.html">privacy</a>
+        </div>
+    </nav>
+    <div class="container">
+        <h1>privacy policy</h1>
+
+        <h2>overview</h2>
+        <p>reiVid by reiLoaded is committed to protecting your privacy. This policy explains how we handle your data.</p>
+
+        <h2>data collection</h2>
+        <p>We do not collect, store, or transmit any personal data or video content:</p>
+        <ul>
+            <li>All video processing occurs entirely in your browser</li>
+            <li>Your videos never leave your device</li>
+            <li>We don't use cookies or tracking</li>
+            <li>We don't collect analytics or usage data</li>
+        </ul>
+
+        <h2>how it works</h2>
+        <ul>
+            <li>Videos are processed locally using FFmpeg.wasm</li>
+            <li>All computations happen in your browser</li>
+            <li>No data is sent to any servers</li>
+            <li>Processed videos are downloaded directly to your device</li>
+        </ul>
+
+        <h2>third-party services</h2>
+        <ul>
+            <li>We use Vercel for hosting static files</li>
+            <li>FFmpeg.wasm is loaded from CDN</li>
+            <li>No third-party analytics or tracking</li>
+        </ul>
+
+        <h2>your rights</h2>
+        <p>Since we don't collect any data, there is:</p>
+        <ul>
+            <li>No personal data to access or delete</li>
+            <li>No data sharing or selling</li>
+            <li>No data retention policies needed</li>
+        </ul>
+
+        <h2>contact</h2>
+        <p>For privacy concerns, you can reach me at:</p>
+        <ul>
+            <li>GitHub: <a href="https://github.com/imnotrei0x">@imnotrei0x</a></li>
+            <li>Twitter: <a href="https://x.com/reiLoaded">@reiLoaded</a></li>
+        </ul>
+
+        <h2>changes</h2>
+        <p>This privacy policy may be updated occasionally. Last updated: March 2024</p>
+    </div>
+</body>
+</html> 
