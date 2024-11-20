@@ -30,23 +30,6 @@
             let selectedQuality = 'original';
             let processedVideoBlob = null;
 
-            function isValidVideoFile(file) {
-                const supportedFormats = [
-                    'video/mp4',
-                    'video/webm',
-                    'video/ogg',
-                    'video/quicktime',
-                    'video/x-matroska', 
-                    'video/x-msvideo'   
-                ];
-                
-                if (!supportedFormats.includes(file.type)) {
-                    alert('Please use a supported format (MP4, WebM, OGG, MOV, MKV, or AVI)');
-                    return false;
-                }
-                return true;
-            }
-
             async function initFFmpeg() {
                 try {
                     if (typeof FFmpeg === 'undefined') {
@@ -129,11 +112,6 @@
                 
                 const file = e.target.files[0];
                 if (file) {
-                    if (!isValidVideoFile(file)) {
-                        fileInput.value = '';
-                        return;
-                    }
-
                     const maxSize = 100 * 1024 * 1024;
                     if (file.size > maxSize) {
                         alert('File is too large. Maximum size is 100MB');
@@ -163,10 +141,6 @@
                             throw new Error('Video must be at least 1 second long');
                         }
                         
-                        const formatSelect = document.getElementById('formatSelect');
-                        formatSelect.value = 'mp4';
-                        formatSelect.disabled = false;
-                        
                         landing.style.display = 'none';
                         preview.style.display = 'flex';
                         timeSlider.value = 0;
@@ -176,14 +150,14 @@
                         updateTimeDisplay();
                         
                     } catch (error) {
-                        alert(error.message || 'Error loading file');
+                        alert(error.message || 'Error loading video');
                         videoPreview.src = '';
                         cleanupVideoUrl();
                         cleanupFFmpeg();
                         fileInput.value = '';
                     } finally {
                         uploadButton.disabled = false;
-                        uploadButton.textContent = 'Select File';
+                        uploadButton.textContent = 'Upload Video';
                     }
                 } else {
                     cleanupFFmpeg();
@@ -393,13 +367,11 @@
             });
 
             downloadBtn.addEventListener('click', async function() {
-                const format = document.getElementById('formatSelect').value;
-                
                 if (processedVideoBlob) {
                     const url = URL.createObjectURL(processedVideoBlob);
                     const a = document.createElement('a');
                     a.href = url;
-                    a.download = `edited_video.${format}`;
+                    a.download = `edited_video.mp4`;
                     document.body.appendChild(a);
                     a.click();
                     document.body.removeChild(a);
@@ -408,13 +380,9 @@
                 }
 
                 downloadBtn.disabled = true;
-                downloadBtn.textContent = 'Processing...';
+                downloadBtn.textContent = 'Loading FFmpeg...';
 
                 try {
-                    if (!window.ffmpeg) {
-                        await initFFmpeg();
-                    }
-
                     const ffmpeg = window.ffmpeg;
                     if (!ffmpeg) {
                         throw new Error('FFmpeg not initialized');
@@ -424,6 +392,8 @@
                         alert('Please upload a video first');
                         return;
                     }
+
+                    downloadBtn.textContent = 'Processing...';
 
                     const videoBlob = await fetch(videoPreview.src).then(r => r.blob());
                     const { fetchFile } = FFmpeg;
@@ -444,54 +414,32 @@
                     const endTime = (endSlider.value / 100) * videoPreview.duration;
                     const duration = endTime - startTime;
 
-                    const outputFileName = `output.${format}`;
-
                     const ffmpegArgs = [
                         '-i', 'input.webm',
                         '-ss', startTime.toString(),
                         '-t', duration.toString(),
-                        '-filter:v', `crop=${cropWidth}:${cropHeight}:${cropX}:${cropY}`
+                        '-filter:v', `crop=${cropWidth}:${cropHeight}:${cropX}:${cropY}`,
+                        '-c:v', 'libx264',
+                        '-preset', 'slow',
+                        '-crf', '18',
+                        '-profile:v', 'high',
+                        '-level', '4.1',
+                        '-movflags', '+faststart',
+                        '-c:a', 'aac',
+                        '-b:a', '192k',
+                        '-strict', 'experimental',
+                        'output.mp4'
                     ];
-
-                    switch(format) {
-                        case 'webm':
-                            ffmpegArgs.push(
-                                '-c:v', 'libvpx-vp9',
-                                '-b:v', '2M',
-                                '-c:a', 'libopus'
-                            );
-                            break;
-                        case 'mov':
-                            ffmpegArgs.push(
-                                '-c:v', 'prores',
-                                '-profile:v', '3',
-                                '-c:a', 'pcm_s16le'
-                            );
-                            break;
-                        default:
-                            ffmpegArgs.push(
-                                '-c:v', 'libx264',
-                                '-preset', 'slow',
-                                '-crf', '18',
-                                '-profile:v', 'high',
-                                '-level', '4.1',
-                                '-movflags', '+faststart',
-                                '-c:a', 'aac',
-                                '-b:a', '192k'
-                            );
-                    }
-
-                    ffmpegArgs.push(outputFileName);
 
                     await ffmpeg.run(...ffmpegArgs);
 
-                    const data = ffmpeg.FS('readFile', outputFileName);
-                    processedVideoBlob = new Blob([data.buffer], { type: `video/${format}` });
+                    const data = ffmpeg.FS('readFile', 'output.mp4');
+                    processedVideoBlob = new Blob([data.buffer], { type: 'video/mp4' });
                     const url = URL.createObjectURL(processedVideoBlob);
                     
                     const a = document.createElement('a');
                     a.href = url;
-                    a.download = `edited_video.${format}`;
+                    a.download = `edited_video.mp4`;
                     document.body.appendChild(a);
                     a.click();
                     document.body.removeChild(a);
@@ -500,10 +448,11 @@
                         URL.revokeObjectURL(url);
                         try {
                             ffmpeg.FS('unlink', 'input.webm');
-                            ffmpeg.FS('unlink', outputFileName);
+                            ffmpeg.FS('unlink', 'output.mp4');
                         } catch (e) {
                             console.error('Cleanup error:', e);
                         }
+                        cleanupFFmpeg();
                     }, 100);
 
                 } catch (error) {
@@ -553,46 +502,6 @@
 
             videoPreview.volume = volumeSlider.value / 100;
             updateVolumeIcon(videoPreview.volume);
-
-            document.body.addEventListener('dragover', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                document.body.classList.add('drag-over');
-            });
-
-            document.body.addEventListener('dragleave', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                if (e.target === document.body) {
-                    document.body.classList.remove('drag-over');
-                }
-            });
-
-            document.body.addEventListener('drop', async function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                document.body.classList.remove('drag-over');
-
-                const files = e.dataTransfer.files;
-                if (files.length > 0) {
-                    const file = files[0];
-                    
-                    if (!file.type.startsWith('video/') || !isValidVideoFile(file)) {
-                        return;
-                    }
-
-                    const dataTransfer = new DataTransfer();
-                    dataTransfer.items.add(file);
-                    fileInput.files = dataTransfer.files;
-
-                    const event = new Event('change');
-                    fileInput.dispatchEvent(event);
-                }
-            });
-
-            document.getElementById('formatSelect').addEventListener('change', function() {
-                processedVideoBlob = null;
-            });
         });
     </script>
     <style>
@@ -657,8 +566,6 @@
             flex-direction: column;
             align-items: center;
             gap: 2rem;
-            margin-top: 80px;
-            padding-bottom: 2rem;
         }
 
         .video-wrapper {
@@ -859,36 +766,8 @@
 
         .button-container {
             display: flex;
-            align-items: center;
             gap: 1rem;
             margin-bottom: 2rem;
-        }
-
-        .download-container {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            flex-direction: row-reverse;
-        }
-
-        .format-select {
-            padding: 0.5rem 1rem;
-            font-size: 1.2rem;
-            background: #2a2a2a;
-            color: white;
-            border: 1px solid #3a3a3a;
-            border-radius: 8px;
-            cursor: pointer;
-            outline: none;
-        }
-
-        .format-select:hover {
-            background: #3a3a3a;
-        }
-
-        .format-select:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
         }
 
         .description {
@@ -988,68 +867,6 @@
         .volume-slider::-moz-range-thumb:hover {
             transform: scale(1.2);
         }
-
-        .drop-text {
-            font-size: 1rem;
-            color: #888888;
-            margin-top: -1.5rem;
-            text-align: center;
-        }
-
-        .drag-over {
-            background: #2a2a2a !important;
-        }
-
-        .navbar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            display: flex;
-            align-items: center;
-            padding: 1rem 2rem;
-            background: #1a1a1a;
-            z-index: 1000;
-            border-bottom: 1px solid #2a2a2a;
-        }
-
-        .nav-brand {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            text-decoration: none;
-            color: white;
-        }
-
-        .nav-brand img {
-            width: 32px;
-            height: auto;
-        }
-
-        .nav-brand h2 {
-            font-size: 1.5rem;
-            margin: 0;
-        }
-
-        .nav-links {
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 2rem;
-        }
-
-        .nav-links a {
-            color: white;
-            text-decoration: none;
-            font-size: 1.1rem;
-            transition: color 0.2s ease;
-            text-transform: lowercase;
-        }
-
-        .nav-links a:hover {
-            color: #007bff;
-        }
     </style>
 </head>
 <body>
@@ -1059,35 +876,14 @@
             <h1>reiVid</h1>
         </div>
         <p class="description">trim and crop videos in your browser</p>
-        <button class="upload-button" onclick="document.getElementById('fileInput').click()">Select Video</button>
-        <input type="file" id="fileInput" accept="video/*" style="display: none;">
-        <p class="drop-text">or drop a video anywhere</p>
+        <button class="upload-button" onclick="document.getElementById('fileInput').click()">Upload Video</button>
+        <input type="file" id="fileInput" accept="video/*">
     </div>
 
     <div class="video-preview-container" id="preview">
-        <nav class="navbar">
-            <a href="/" class="nav-brand">
-                <img src="logo.png" alt="reiVid">
-                <h2>reiVid</h2>
-            </a>
-            <div class="nav-links">
-                <a href="/">home</a>
-                <a href="/about.html">about</a>
-                <a href="/donate.html">donate</a>
-                <a href="/terms.html">terms</a>
-                <a href="/privacy.html">privacy</a>
-            </div>
-        </nav>
         <div class="button-container">
             <button class="upload-button" onclick="document.getElementById('fileInput').click()">Choose Different Video</button>
-            <div class="download-container">
-                <select id="formatSelect" class="format-select">
-                    <option value="mp4">MP4</option>
-                    <option value="webm">WebM</option>
-                    <option value="mov">MOV</option>
-                </select>
-                <button class="upload-button" id="downloadBtn">Download Video</button>
-            </div>
+            <button class="upload-button" id="downloadBtn">Download Video</button>
         </div>
         <div style="position: relative;">
             <div class="video-wrapper">
