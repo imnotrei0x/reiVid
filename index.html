@@ -1004,17 +1004,15 @@
             top: 0;
             left: 0;
             right: 0;
-            height: 60px;
-            background: #2a2a2a;
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            padding: 0 2rem;
+            padding: 1rem 2rem;
+            background: #1a1a1a;
             z-index: 1000;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            border-bottom: 1px solid #2a2a2a;
         }
 
-        .navbar-brand {
+        .nav-brand {
             display: flex;
             align-items: center;
             gap: 1rem;
@@ -1022,30 +1020,34 @@
             color: white;
         }
 
-        .navbar-brand img {
+        .nav-brand img {
             width: 32px;
             height: auto;
         }
 
-        .navbar-brand h1 {
+        .nav-brand h2 {
             font-size: 1.5rem;
             margin: 0;
         }
 
-        .navbar-links {
+        .nav-links {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
             display: flex;
-            gap: 1.5rem;
+            gap: 2rem;
         }
 
-        .navbar-link {
-            color: #cccccc;
-            text-decoration: none;
-            font-size: 1rem;
-            transition: color 0.2s ease;
-        }
-
-        .navbar-link:hover {
+        .nav-links a {
             color: white;
+            text-decoration: none;
+            font-size: 1.1rem;
+            transition: color 0.2s ease;
+            text-transform: lowercase;
+        }
+
+        .nav-links a:hover {
+            color: #007bff;
         }
     </style>
 </head>
@@ -1062,17 +1064,19 @@
     </div>
 
     <div class="video-preview-container" id="preview">
-        <div class="navbar">
-            <a href="/" class="navbar-brand">
+        <nav class="navbar">
+            <a href="/" class="nav-brand">
                 <img src="logo.png" alt="reiVid">
-                <h1>reiVid</h1>
+                <h2>reiVid</h2>
             </a>
-            <div class="navbar-links">
-                <a href="/about.html" class="navbar-link">About</a>
-                <a href="/donate.html" class="navbar-link">Donate</a>
-                <a href="https://github.com/yourusername/reiVid" class="navbar-link">GitHub</a>
+            <div class="nav-links">
+                <a href="/">home</a>
+                <a href="/about.html">about</a>
+                <a href="/donate.html">donate</a>
+                <a href="/terms.html">terms</a>
+                <a href="/privacy.html">privacy</a>
             </div>
-        </div>
+        </nav>
         <div class="button-container">
             <button class="upload-button" onclick="document.getElementById('fileInput').click()">Choose Different Video</button>
             <div class="download-container">
