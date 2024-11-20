@@ -104,25 +104,21 @@
             }
 
             function initVideoControls() {
-                // Reset controls state
                 playPauseBtn.innerHTML = '&#9654;';
                 timeSlider.value = 0;
                 endSlider.value = 100;
                 videoPreview.currentTime = 0;
                 
-                // Remove existing listeners to prevent duplicates
                 videoPreview.removeEventListener('timeupdate', handleTimeUpdate);
                 timeSlider.removeEventListener('input', handleTimeSliderInput);
                 endSlider.removeEventListener('input', handleEndSliderInput);
                 playPauseBtn.removeEventListener('click', handlePlayPause);
                 
-                // Add event listeners
                 videoPreview.addEventListener('timeupdate', handleTimeUpdate);
                 timeSlider.addEventListener('input', handleTimeSliderInput);
                 endSlider.addEventListener('input', handleEndSliderInput);
                 playPauseBtn.addEventListener('click', handlePlayPause);
                 
-                // Reset volume
                 videoPreview.volume = volumeSlider.value / 100;
                 updateVolumeIcon(videoPreview.volume);
                 
@@ -238,7 +234,7 @@
                         preview.style.display = 'flex';
                         
                         resetCropOverlay();
-                        initVideoControls(); // Initialize controls for new video
+                        initVideoControls();
                         
                         videoPreview.volume = volumeSlider.value / 100;
                         updateVolumeIcon(videoPreview.volume);
