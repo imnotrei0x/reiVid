@@ -867,6 +867,26 @@
         .volume-slider::-moz-range-thumb:hover {
             transform: scale(1.2);
         }
+
+        .footer-links {
+            display: flex;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .footer-links a {
+            color: white;
+            text-decoration: none;
+            font-size: 1.1rem;
+            transition: color 0.2s ease;
+            text-transform: lowercase;
+            opacity: 0.7;
+        }
+
+        .footer-links a:hover {
+            color: #007bff;
+            opacity: 1;
+        }
     </style>
 </head>
 <body>
@@ -878,6 +898,13 @@
         <p class="description">trim and crop videos in your browser</p>
         <button class="upload-button" onclick="document.getElementById('fileInput').click()">Upload Video</button>
         <input type="file" id="fileInput" accept="video/*">
+        
+        <div class="footer-links">
+            <a href="/about.html">about</a>
+            <a href="/donate.html">donate</a>
+            <a href="/terms.html">terms</a>
+            <a href="/privacy.html">privacy</a>
+        </div>
     </div>
 
     <div class="video-preview-container" id="preview">
