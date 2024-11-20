@@ -656,6 +656,8 @@
             flex-direction: column;
             align-items: center;
             gap: 2rem;
+            margin-top: 80px;
+            padding-bottom: 2rem;
         }
 
         .video-wrapper {
@@ -996,6 +998,55 @@
         .drag-over {
             background: #2a2a2a !important;
         }
+
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: #2a2a2a;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 2rem;
+            z-index: 1000;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            text-decoration: none;
+            color: white;
+        }
+
+        .navbar-brand img {
+            width: 32px;
+            height: auto;
+        }
+
+        .navbar-brand h1 {
+            font-size: 1.5rem;
+            margin: 0;
+        }
+
+        .navbar-links {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .navbar-link {
+            color: #cccccc;
+            text-decoration: none;
+            font-size: 1rem;
+            transition: color 0.2s ease;
+        }
+
+        .navbar-link:hover {
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -1011,6 +1062,17 @@
     </div>
 
     <div class="video-preview-container" id="preview">
+        <div class="navbar">
+            <a href="/" class="navbar-brand">
+                <img src="logo.png" alt="reiVid">
+                <h1>reiVid</h1>
+            </a>
+            <div class="navbar-links">
+                <a href="/about.html" class="navbar-link">About</a>
+                <a href="/donate.html" class="navbar-link">Donate</a>
+                <a href="https://github.com/yourusername/reiVid" class="navbar-link">GitHub</a>
+            </div>
+        </div>
         <div class="button-container">
             <button class="upload-button" onclick="document.getElementById('fileInput').click()">Choose Different Video</button>
             <div class="download-container">
