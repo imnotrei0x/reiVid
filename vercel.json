@@ -19,10 +19,6 @@
       }
     },
     {
-      "src": "/",
-      "dest": "/src/pages/index.html"
-    },
-    {
       "src": "/components/(.*)",
       "dest": "/src/components/$1"
     },
@@ -35,16 +31,20 @@
       "dest": "/src/assets/logo.png"
     },
     {
-      "src": "/(.*).html",
-      "dest": "/src/pages/$1.html"
-    },
-    {
       "src": "/styles/(.*)",
       "dest": "/src/styles/$1"
     },
     {
       "src": "/js/(.*)",
       "dest": "/src/js/$1"
+    },
+    {
+      "src": "/",
+      "dest": "/src/pages/index.html"
+    },
+    {
+      "src": "/(about|editor|terms|privacy|donate)",
+      "dest": "/src/pages/$1.html"
     }
   ]
 }
