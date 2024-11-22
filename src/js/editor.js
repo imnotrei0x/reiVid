@@ -22,55 +22,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     let previousVolume = 1;
     let selectedFormat = 'mp4';
 
-    const videoStore = {
-        async init() {
-            return new Promise((resolve, reject) => {
-                const request = indexedDB.open('VideoDatabase', 1);
-                
-                request.onerror = () => reject(request.error);
-                request.onsuccess = () => resolve(request.result);
-                
-                request.onupgradeneeded = (event) => {
-                    const db = event.target.result;
-                    if (!db.objectStoreNames.contains('videos')) {
-                        db.createObjectStore('videos');
-                    }
-                };
-            });
-        },
-        
-        async getVideo() {
-            const db = await this.init();
-            return new Promise((resolve, reject) => {
-                const transaction = db.transaction(['videos'], 'readonly');
-                const store = transaction.objectStore('videos');
-                const request = store.get('pendingVideo');
-                
-                request.onerror = () => reject(request.error);
-                request.onsuccess = () => resolve(request.result);
-            });
-        },
-        
-        async cleanup() {
-            const db = await this.init();
-            return new Promise((resolve, reject) => {
-                const transaction = db.transaction(['videos'], 'readwrite');
-                const store = transaction.objectStore('videos');
-                const request = store.delete('pendingVideo');
-                
-                request.onerror = () => reject(request.error);
-                request.onsuccess = () => resolve();
-            });
-        }
-    };
-
-    const videoPath = localStorage.getItem('videoPath');
-    if (videoPath) {
+    const videoData = decodeURIComponent(window.location.hash.slice(1));
+    if (videoData) {
         try {
             await initFFmpeg();
             
-            videoPreview.src = videoPath;
-            localStorage.removeItem('videoPath');
+            videoPreview.src = videoData;
             
             const loadPromise = new Promise((resolve, reject) => {
                 videoPreview.addEventListener('loadedmetadata', resolve, { once: true });
@@ -90,6 +47,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             resetCropOverlay();
             updateTimeDisplay();
             downloadBtn.disabled = false;
+            
+            history.replaceState(null, null, ' ');
         } catch (error) {
             console.error('Error loading video:', error);
             alert('Error loading video: ' + error.message);

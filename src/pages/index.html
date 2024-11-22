@@ -28,15 +28,17 @@
             fileInput.onchange = function(e) {
                 const file = e.target.files[0];
                 if (file) {
-                    const fileUrl = URL.createObjectURL(file);
-                    localStorage.setItem('videoPath', fileUrl);
-                    
-                    const landing = document.getElementById('landing');
-                    landing.classList.add('fade-out');
-                    
-                    setTimeout(() => {
-                        window.location.href = '/editor';
-                    }, 300);
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const base64 = e.target.result;
+                        const landing = document.getElementById('landing');
+                        landing.classList.add('fade-out');
+                        
+                        setTimeout(() => {
+                            window.location.href = `/editor#${encodeURIComponent(base64)}`;
+                        }, 300);
+                    };
+                    reader.readAsDataURL(file);
                 }
             };
             
