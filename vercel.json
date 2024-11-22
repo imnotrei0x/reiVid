@@ -15,6 +15,10 @@
       "dest": "/src/pages/index.html"
     },
     {
+      "src": "/components/(.*)",
+      "dest": "/src/components/$1"
+    },
+    {
       "src": "/assets/(.*)",
       "dest": "/src/assets/$1"
     },
@@ -37,10 +41,6 @@
     {
       "src": "/js/(.*)",
       "dest": "/src/js/$1"
-    },
-    {
-      "src": "/components/(.*)",
-      "dest": "/src/components/$1"
     }
   ]
 }
