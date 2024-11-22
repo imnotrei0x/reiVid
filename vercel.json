@@ -1,0 +1,41 @@
+{
+  "version": 2,
+  "routes": [
+    {
+      "src": "/(.*)",
+      "headers": {
+        "Cross-Origin-Embedder-Policy": "credentialless",
+        "Cross-Origin-Opener-Policy": "same-origin",
+        "Cross-Origin-Resource-Policy": "same-site"
+      },
+      "continue": true
+    },
+    {
+      "src": "/feedback.html",
+      "headers": {
+        "Cross-Origin-Resource-Policy": "cross-origin"
+      },
+      "continue": true
+    },
+    {
+      "src": "/favicon.ico",
+      "dest": "/favicon.ico"
+    },
+    {
+      "src": "/logo.png",
+      "dest": "/logo.png"
+    },
+    {
+      "src": "/about.html",
+      "dest": "/about.html"
+    },
+    {
+      "src": "/donate.html",
+      "dest": "/donate.html"
+    },
+    {
+      "src": "/editor.html",
+      "dest": "/editor.html"
+    }
+  ]
+}

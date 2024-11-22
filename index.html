@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>reiVid</title>
+    <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" href="logo.png">
+    <meta name="msapplication-TileImage" content="/favicon.ico">
+    <meta property="og:image" content="/logo.png">
+    <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.11.0/dist/ffmpeg.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const fileInput = document.getElementById('fileInput');
+            const landing = document.getElementById('landing');
+            const preview = document.getElementById('preview');
+            const videoPreview = document.getElementById('videoPreview');
+            const playPauseBtn = document.getElementById('playPauseBtn');
+            const timeDisplay = document.getElementById('timeDisplay');
+            const timeSlider = document.getElementById('timeSlider');
+            const endSlider = document.getElementById('endSlider');
+            const cropOverlay = document.getElementById('cropOverlay');
+            const cropPoints = document.querySelectorAll('.crop-point');
+            const downloadBtn = document.getElementById('downloadBtn');
+            const qualityBtns = document.querySelectorAll('.quality-btn');
+            
+            let isDragging = false;
+            let currentPoint = null;
+            let startX, startY, startLeft, startTop, startWidth, startHeight;
+            let currentVideoUrl = null;
+            let selectedQuality = 'original';
+            let processedVideoBlob = null;
+
+            async function initFFmpeg() {
+                try {
+                    if (typeof FFmpeg === 'undefined') {
+                        throw new Error('FFmpeg failed to load');
+                    }
+                    
+                    const { createFFmpeg } = FFmpeg;
+                    window.ffmpeg = createFFmpeg({
+                        log: true,
+                        corePath: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js'
+                    });
+                    
+                    await window.ffmpeg.load();
+                } catch (err) {
+                    throw new Error('FFmpeg initialization error: ' + err.message);
+                }
+            }
+
+            function cleanupFFmpeg() {
+                if (window.ffmpeg) {
+                    window.ffmpeg.exit();
+                    window.ffmpeg = null;
+                }
+            }
+
+            function cleanupVideoUrl() {
+                if (currentVideoUrl) {
+                    URL.revokeObjectURL(currentVideoUrl);
+                }
+            }
+
+            function handleResize() {
+                const wrapperRect = cropOverlay.parentElement.getBoundingClientRect();
+                
+                const newLeft = Math.min(cropOverlay.offsetLeft, wrapperRect.width - cropOverlay.offsetWidth);
+                const newTop = Math.min(cropOverlay.offsetTop, wrapperRect.height - cropOverlay.offsetHeight);
+                
+                cropOverlay.style.left = `${newLeft}px`;
+                cropOverlay.style.top = `${newTop}px`;
+            }
+
+            window.addEventListener('resize', handleResize);
+
+            function formatTime(seconds) {
+                const minutes = Math.floor(seconds / 60);
+                const remainingSeconds = Math.floor(seconds % 60);
+                return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+            }
+
+            function updateTimeDisplay() {
+                if (!isNaN(videoPreview.duration)) {
+                    const endTime = (endSlider.value / 100) * videoPreview.duration;
+                    timeDisplay.textContent = `${formatTime(videoPreview.currentTime)} / ${formatTime(endTime)}`;
+                }
+            }
+
+            playPauseBtn.addEventListener('click', function() {
+                if (videoPreview.paused) {
+                    const startTime = (timeSlider.value / 100) * videoPreview.duration;
+                    if (Math.abs(videoPreview.currentTime - startTime) > 0.1) {
+                        videoPreview.currentTime = startTime;
+                    }
+                    videoPreview.play();
+                    playPauseBtn.innerHTML = '&#10074;&#10074;';
+                } else {
+                    videoPreview.pause();
+                    playPauseBtn.innerHTML = '&#9654;';
+                }
+            });
+
+            function resetCropOverlay() {
+                cropOverlay.style.top = '0';
+                cropOverlay.style.left = '0';
+                cropOverlay.style.width = '100%';
+                cropOverlay.style.height = '100%';
+            }
+
+            fileInput.addEventListener('change', async function(e) {
+                processedVideoBlob = null;
+                
+                const file = e.target.files[0];
+                if (file) {
+                    const maxSize = 100 * 1024 * 1024;
+                    if (file.size > maxSize) {
+                        alert('File is too large. Maximum size is 100MB');
+                        fileInput.value = '';
+                        return;
+                    }
+
+                    const uploadButton = document.querySelector('.upload-button');
+                    uploadButton.disabled = true;
+                    uploadButton.textContent = 'Loading FFmpeg...';
+
+                    try {
+                        await initFFmpeg();
+
+                        cleanupVideoUrl();
+                        currentVideoUrl = URL.createObjectURL(file);
+                        videoPreview.src = currentVideoUrl;
+                        
+                        const loadPromise = new Promise((resolve, reject) => {
+                            videoPreview.addEventListener('loadedmetadata', resolve, { once: true });
+                            videoPreview.addEventListener('error', reject, { once: true });
+                        });
+
+                        await loadPromise;
+                        
+                        if (videoPreview.duration < 1) {
+                            throw new Error('Video must be at least 1 second long');
+                        }
+                        
+                        landing.style.display = 'none';
+                        preview.style.display = 'flex';
+                        timeSlider.value = 0;
+                        endSlider.value = 100;
+                        videoPreview.currentTime = 0;
+                        resetCropOverlay();
+                        updateTimeDisplay();
+                        
+                    } catch (error) {
+                        alert(error.message || 'Error loading video');
+                        videoPreview.src = '';
+                        cleanupVideoUrl();
+                        cleanupFFmpeg();
+                        fileInput.value = '';
+                    } finally {
+                        uploadButton.disabled = false;
+                        uploadButton.textContent = 'Upload Video';
+                    }
+                } else {
+                    cleanupFFmpeg();
+                }
+            });
+
+            videoPreview.addEventListener('timeupdate', function() {
+                const endTime = (endSlider.value / 100) * videoPreview.duration;
+                
+                if (videoPreview.currentTime >= endTime) {
+                    videoPreview.pause();
+                    playPauseBtn.innerHTML = '&#9654;';
+                }
+                
+                updateTimeDisplay();
+            });
+
+            let sliderUpdateTimeout;
+            
+            timeSlider.addEventListener('input', function() {
+                const minDistance = (1 / videoPreview.duration) * 100;
+                const startValue = parseFloat(timeSlider.value);
+                const endValue = parseFloat(endSlider.value);
+
+                if (endValue - startValue < minDistance) {
+                    timeSlider.value = endValue - minDistance;
+                    return;
+                }
+
+                clearTimeout(sliderUpdateTimeout);
+                sliderUpdateTimeout = setTimeout(() => {
+                    const startTime = (timeSlider.value / 100) * videoPreview.duration;
+                    videoPreview.currentTime = startTime;
+                    
+                    if (!videoPreview.paused) {
+                        videoPreview.play();
+                    }
+                }, 16);
+
+                updateTimeDisplay();
+            });
+
+            endSlider.addEventListener('input', function() {
+                const minDistance = (1 / videoPreview.duration) * 100;
+                const startValue = parseFloat(timeSlider.value);
+                const endValue = parseFloat(endSlider.value);
+
+                if (endValue - startValue < minDistance) {
+                    endSlider.value = startValue + minDistance;
+                    return;
+                }
+
+                updateTimeDisplay();
+            });
+
+            cropOverlay.addEventListener('mousedown', initDrag);
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('mouseup', stopDrag);
+
+            cropPoints.forEach(point => {
+                point.addEventListener('mousedown', initPointDrag);
+            });
+
+            function initDrag(e) {
+                if (e.button !== 0) return;
+                
+                if (e.target === cropOverlay) {
+                    isDragging = true;
+                    startX = e.clientX;
+                    startY = e.clientY;
+                    startLeft = cropOverlay.offsetLeft;
+                    startTop = cropOverlay.offsetTop;
+                }
+            }
+
+            function initPointDrag(e) {
+                if (e.button !== 0) return;
+                
+                e.stopPropagation();
+                isDragging = true;
+                currentPoint = e.target;
+                startX = e.clientX;
+                startY = e.clientY;
+                startWidth = cropOverlay.offsetWidth;
+                startHeight = cropOverlay.offsetHeight;
+                startLeft = cropOverlay.offsetLeft;
+                startTop = cropOverlay.offsetTop;
+            }
+
+            function drag(e) {
+                if (!isDragging) return;
+
+                const wrapperRect = cropOverlay.parentElement.getBoundingClientRect();
+                const minSize = 50;
+                
+                if (currentPoint) {
+                    const dx = e.clientX - startX;
+                    const dy = e.clientY - startY;
+                    
+                    const point = currentPoint.dataset.point;
+                    let newWidth = startWidth;
+                    let newHeight = startHeight;
+                    let newLeft = startLeft;
+                    let newTop = startTop;
+
+                    switch(point) {
+                        case 'top-left':
+                            newLeft = Math.min(Math.max(0, startLeft + dx), startLeft + startWidth - minSize);
+                            newTop = Math.min(Math.max(0, startTop + dy), startTop + startHeight - minSize);
+                            newWidth = startLeft + startWidth - newLeft;
+                            newHeight = startTop + startHeight - newTop;
+                            break;
+                        case 'top-right':
+                            newWidth = Math.min(Math.max(minSize, startWidth + dx), wrapperRect.width - startLeft);
+                            newTop = Math.min(Math.max(0, startTop + dy), startTop + startHeight - minSize);
+                            newHeight = startTop + startHeight - newTop;
+                            break;
+                        case 'bottom-left':
+                            newLeft = Math.min(Math.max(0, startLeft + dx), startLeft + startWidth - minSize);
+                            newWidth = startLeft + startWidth - newLeft;
+                            newHeight = Math.min(Math.max(minSize, startHeight + dy), wrapperRect.height - startTop);
+                            break;
+                        case 'bottom-right':
+                            newWidth = Math.min(Math.max(minSize, startWidth + dx), wrapperRect.width - startLeft);
+                            newHeight = Math.min(Math.max(minSize, startHeight + dy), wrapperRect.height - startTop);
+                            break;
+                    }
+
+                    if (newLeft + newWidth > wrapperRect.width) {
+                        newWidth = wrapperRect.width - newLeft;
+                    }
+                    if (newTop + newHeight > wrapperRect.height) {
+                        newHeight = wrapperRect.height - newTop;
+                    }
+
+                    newWidth = Math.max(minSize, newWidth);
+                    newHeight = Math.max(minSize, newHeight);
+
+                    cropOverlay.style.width = `${newWidth}px`;
+                    cropOverlay.style.height = `${newHeight}px`;
+                    cropOverlay.style.left = `${newLeft}px`;
+                    cropOverlay.style.top = `${newTop}px`;
+                } else {
+                    const dx = e.clientX - startX;
+                    const dy = e.clientY - startY;
+                    
+                    let newLeft = startLeft + dx;
+                    let newTop = startTop + dy;
+
+                    newLeft = Math.max(0, Math.min(newLeft, wrapperRect.width - cropOverlay.offsetWidth));
+                    newTop = Math.max(0, Math.min(newTop, wrapperRect.height - cropOverlay.offsetHeight));
+
+                    cropOverlay.style.left = `${newLeft}px`;
+                    cropOverlay.style.top = `${newTop}px`;
+                }
+            }
+
+            function stopDrag() {
+                isDragging = false;
+                currentPoint = null;
+            }
+
+            cropOverlay.addEventListener('touchstart', e => {
+                e.preventDefault();
+                const touch = e.touches[0];
+                const event = new MouseEvent('mousedown', {
+                    clientX: touch.clientX,
+                    clientY: touch.clientY
+                });
+                initDrag(event);
+            });
+
+            document.addEventListener('touchmove', e => {
+                if (isDragging) {
+                    e.preventDefault();
+                    const touch = e.touches[0];
+                    const event = new MouseEvent('mousemove', {
+                        clientX: touch.clientX,
+                        clientY: touch.clientY
+                    });
+                    drag(event);
+                }
+            });
+
+            document.addEventListener('touchend', e => {
+                if (isDragging) {
+                    e.preventDefault();
+                    stopDrag();
+                }
+            });
+
+            document.addEventListener('mouseup', function(e) {
+                if (isDragging) {
+                    stopDrag();
+                }
+            });
+
+            window.addEventListener('blur', function() {
+                if (isDragging) {
+                    stopDrag();
+                }
+            });
+
+            window.addEventListener('beforeunload', () => {
+                cleanupVideoUrl();
+                cleanupFFmpeg();
+            });
+
+            downloadBtn.addEventListener('click', async function() {
+                if (processedVideoBlob) {
+                    const url = URL.createObjectURL(processedVideoBlob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `edited_video.mp4`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    setTimeout(() => URL.revokeObjectURL(url), 100);
+                    return;
+                }
+
+                downloadBtn.disabled = true;
+                downloadBtn.textContent = 'Loading FFmpeg...';
+
+                try {
+                    const ffmpeg = window.ffmpeg;
+                    if (!ffmpeg) {
+                        throw new Error('FFmpeg not initialized');
+                    }
+
+                    if (!videoPreview.src) {
+                        alert('Please upload a video first');
+                        return;
+                    }
+
+                    downloadBtn.textContent = 'Processing...';
+
+                    const videoBlob = await fetch(videoPreview.src).then(r => r.blob());
+                    const { fetchFile } = FFmpeg;
+                    await ffmpeg.FS('writeFile', 'input.webm', await fetchFile(videoBlob));
+
+                    const videoRect = videoPreview.getBoundingClientRect();
+                    const cropRect = cropOverlay.getBoundingClientRect();
+                    
+                    const scaleX = videoPreview.videoWidth / videoRect.width;
+                    const scaleY = videoPreview.videoHeight / videoRect.height;
+                    
+                    const cropX = Math.round((cropRect.left - videoRect.left) * scaleX);
+                    const cropY = Math.round((cropRect.top - videoRect.top) * scaleY);
+                    const cropWidth = Math.round(cropRect.width * scaleX);
+                    const cropHeight = Math.round(cropRect.height * scaleY);
+
+                    const startTime = (timeSlider.value / 100) * videoPreview.duration;
+                    const endTime = (endSlider.value / 100) * videoPreview.duration;
+                    const duration = endTime - startTime;
+
+                    const ffmpegArgs = [
+                        '-i', 'input.webm',
+                        '-ss', startTime.toString(),
+                        '-t', duration.toString(),
+                        '-filter:v', `crop=${cropWidth}:${cropHeight}:${cropX}:${cropY}`,
+                        '-c:v', 'libx264',
+                        '-preset', 'slow',
+                        '-crf', '18',
+                        '-profile:v', 'high',
+                        '-level', '4.1',
+                        '-movflags', '+faststart',
+                        '-c:a', 'aac',
+                        '-b:a', '192k',
+                        '-strict', 'experimental',
+                        'output.mp4'
+                    ];
+
+                    await ffmpeg.run(...ffmpegArgs);
+
+                    const data = ffmpeg.FS('readFile', 'output.mp4');
+                    processedVideoBlob = new Blob([data.buffer], { type: 'video/mp4' });
+                    const url = URL.createObjectURL(processedVideoBlob);
+                    
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `edited_video.mp4`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+
+                    setTimeout(() => {
+                        URL.revokeObjectURL(url);
+                        try {
+                            ffmpeg.FS('unlink', 'input.webm');
+                            ffmpeg.FS('unlink', 'output.mp4');
+                        } catch (e) {
+                            console.error('Cleanup error:', e);
+                        }
+                        cleanupFFmpeg();
+                    }, 100);
+
+                } catch (error) {
+                    alert('Error processing video: ' + error.message);
+                    processedVideoBlob = null;
+                } finally {
+                    downloadBtn.disabled = false;
+                    downloadBtn.textContent = 'Download Video';
+                }
+            });
+
+            timeSlider.addEventListener('change', () => processedVideoBlob = null);
+            endSlider.addEventListener('change', () => processedVideoBlob = null);
+            cropOverlay.addEventListener('mouseup', () => processedVideoBlob = null);
+
+            const volumeBtn = document.getElementById('volumeBtn');
+            const volumeSlider = document.getElementById('volumeSlider');
+            let previousVolume = 1;
+
+            volumeSlider.addEventListener('input', function() {
+                const volume = this.value / 100;
+                videoPreview.volume = volume;
+                updateVolumeIcon(volume);
+            });
+
+            volumeBtn.addEventListener('click', function() {
+                if (videoPreview.volume > 0) {
+                    previousVolume = videoPreview.volume;
+                    videoPreview.volume = 0;
+                    volumeSlider.value = 0;
+                } else {
+                    videoPreview.volume = previousVolume;
+                    volumeSlider.value = previousVolume * 100;
+                }
+                updateVolumeIcon(videoPreview.volume);
+            });
+
+            function updateVolumeIcon(volume) {
+                if (volume === 0) {
+                    volumeBtn.textContent = '🔇';
+                } else if (volume < 0.5) {
+                    volumeBtn.textContent = '🔉';
+                } else {
+                    volumeBtn.textContent = '🔊';
+                }
+            }
+
+            videoPreview.volume = volumeSlider.value / 100;
+            updateVolumeIcon(videoPreview.volume);
+        });
+    </script>
+    <style>
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #1a1a1a;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo {
+            width: 64px;
+            height: auto;
+        }
+
+        h1 {
+            font-size: 3rem;
+            margin: 0;
+        }
+
+        .upload-button {
+            padding: 1rem 2rem;
+            font-size: 1.2rem;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .upload-button:hover {
+            background: #0056b3;
+        }
+
+        .upload-button:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+        }
+
+        .video-preview-container {
+            display: none;
+            width: 90vw;
+            max-width: 1600px;
+            flex-direction: column;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .video-wrapper {
+            width: 100%;
+            height: 900px;
+            background: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .video-preview {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background: #000;
+        }
+
+        .custom-controls {
+            margin-top: 1rem;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            border-radius: 8px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .play-pause-btn {
+            background: transparent;
+            border: none;
+            color: #fff;
+            cursor: pointer;
+            padding: 5px;
+            width: 40px;
+            height: 40px;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.1s;
+            outline: none;
+        }
+
+        .play-pause-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .time-display {
+            color: white;
+            font-size: 14px;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .slider-container {
+            position: relative;
+            flex-grow: 1;
+            margin: 0 15px;
+            height: 4px;
+        }
+
+        .time-slider, .end-slider {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+            pointer-events: none;
+        }
+
+        .time-slider {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+            z-index: 1;
+        }
+
+        .end-slider {
+            z-index: 2;
+        }
+
+        .time-slider::-webkit-slider-thumb,
+        .end-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.1s;
+            pointer-events: auto;
+        }
+
+        .time-slider::-webkit-slider-thumb {
+            background: #007bff;
+        }
+
+        .end-slider::-webkit-slider-thumb {
+            background: #ff3e3e;
+        }
+
+        .time-slider::-moz-range-thumb,
+        .end-slider::-moz-range-thumb {
+            width: 12px;
+            height: 12px;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.1s;
+            pointer-events: auto;
+        }
+
+        .time-slider::-moz-range-thumb {
+            background: #007bff;
+        }
+
+        .end-slider::-moz-range-thumb {
+            background: #ff3e3e;
+        }
+
+        .time-slider::-webkit-slider-thumb:hover,
+        .end-slider::-webkit-slider-thumb:hover,
+        .time-slider::-moz-range-thumb:hover,
+        .end-slider::-moz-range-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        .crop-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .crop-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 2px solid #ff3e3e;
+            cursor: move;
+            touch-action: none;
+            box-sizing: border-box;
+            pointer-events: auto;
+        }
+
+        .crop-point {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: #ff3e3e;
+            border-radius: 50%;
+            cursor: pointer;
+            touch-action: none;
+            pointer-events: auto;
+        }
+
+        .crop-point.top-left { 
+            top: -10px; 
+            left: -10px; 
+        }
+        .crop-point.top-right { 
+            top: -10px; 
+            right: -10px; 
+        }
+        .crop-point.bottom-left { 
+            bottom: -10px; 
+            left: -10px; 
+        }
+        .crop-point.bottom-right { 
+            bottom: -10px; 
+            right: -10px; 
+        }
+
+        .container,
+        .header,
+        .logo,
+        h1,
+        .upload-button,
+        .video-preview-container,
+        .crop-container,
+        .crop-overlay,
+        .crop-point,
+        .custom-controls,
+        .play-pause-btn,
+        .time-display {
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+
+        .button-container {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .description {
+            font-size: 1.2rem;
+            color: #cccccc;
+            margin: 0;
+            text-align: center;
+        }
+
+        .container {
+            margin-top: 80px;
+        }
+
+        .quality-options {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            justify-content: center;
+        }
+
+        .quality-btn {
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+            background: #2a2a2a;
+            color: white;
+            border: 1px solid #3a3a3a;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .quality-btn.active {
+            background: #007bff;
+            border-color: #0056b3;
+        }
+
+        .quality-btn:hover {
+            background: #3a3a3a;
+        }
+
+        .volume-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-left: 15px;
+        }
+
+        .volume-btn {
+            background: transparent;
+            border: none;
+            color: #fff;
+            cursor: pointer;
+            padding: 5px;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.1s;
+            outline: none;
+        }
+
+        .volume-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .volume-slider {
+            width: 80px;
+            height: 4px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+            outline: none;
+        }
+
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #007bff;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .volume-slider::-moz-range-thumb {
+            width: 12px;
+            height: 12px;
+            border: none;
+            border-radius: 50%;
+            background: #007bff;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .volume-slider::-webkit-slider-thumb:hover,
+        .volume-slider::-moz-range-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .footer-links a {
+            color: white;
+            text-decoration: none;
+            font-size: 1.1rem;
+            transition: color 0.2s ease;
+            text-transform: lowercase;
+            opacity: 0.7;
+        }
+
+        .footer-links a:hover {
+            color: #007bff;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="landing">
+        <div class="header">
+            <img src="logo.png" alt="reiVid" class="logo">
+            <h1>reiVid</h1>
+        </div>
+        <p class="description">trim and crop videos in your browser</p>
+        <button class="upload-button" onclick="document.getElementById('fileInput').click()">Upload Video</button>
+        <input type="file" id="fileInput" accept="video/*">
+        
+        <div class="footer-links">
+            <a href="/about.html">about</a>
+            <a href="/donate.html">donate</a>
+            <a href="/terms.html">terms</a>
+            <a href="/privacy.html">privacy</a>
+        </div>
+    </div>
+
+    <div class="video-preview-container" id="preview">
+        <div class="button-container">
+            <button class="upload-button" onclick="document.getElementById('fileInput').click()">Choose Different Video</button>
+            <button class="upload-button" id="downloadBtn">Download Video</button>
+        </div>
+        <div style="position: relative;">
+            <div class="video-wrapper">
+                <video class="video-preview" id="videoPreview" preload="auto"></video>
+            </div>
+            <div class="crop-container">
+                <div class="crop-overlay" id="cropOverlay">
+                    <div class="crop-point top-left" data-point="top-left"></div>
+                    <div class="crop-point top-right" data-point="top-right"></div>
+                    <div class="crop-point bottom-left" data-point="bottom-left"></div>
+                    <div class="crop-point bottom-right" data-point="bottom-right"></div>
+                </div>
+            </div>
+        </div>
+        <div class="custom-controls">
+            <button class="play-pause-btn" id="playPauseBtn">▶</button>
+            <div class="slider-container">
+                <input type="range" class="time-slider" id="timeSlider" value="0" min="0" max="100" step="0.1">
+                <input type="range" class="end-slider" id="endSlider" value="100" min="0" max="100" step="0.1">
+            </div>
+            <span class="time-display" id="timeDisplay">0:00 / 0:00</span>
+            <div class="volume-control">
+                <button class="volume-btn" id="volumeBtn">🔊</button>
+                <input type="range" class="volume-slider" id="volumeSlider" value="100" min="0" max="100" step="1">
+            </div>
+        </div>
+    </div>
+</body>
+</html>

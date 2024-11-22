@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>donate</title>
+    <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" href="logo.png">
+    <style>
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #1a1a1a;
+            color: white;
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        .main-content {
+            margin-top: 4rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        p {
+            font-size: 1.2rem;
+            color: #cccccc;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .donation-container {
+            display: flex;
+            gap: 2rem;
+            flex-wrap: wrap;
+            justify-content: center;
+            max-width: 800px;
+            margin: 0 2rem;
+        }
+
+        .donation-box {
+            background: #2a2a2a;
+            padding: 2rem;
+            border-radius: 8px;
+            width: 300px;
+            text-align: center;
+            height: fit-content;
+        }
+
+        .crypto-option {
+            cursor: pointer;
+            padding: 0.5rem;
+            margin: 0.5rem 0;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+
+        .crypto-option:hover {
+            background: #3a3a3a;
+        }
+
+        .crypto-address {
+            display: none;
+            margin-top: 0.5rem;
+            padding: 0.75rem;
+            background: #1a1a1a;
+            border-radius: 4px;
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .crypto-address:hover {
+            background: #222;
+        }
+
+        .crypto-option.active .crypto-address {
+            display: block;
+        }
+
+        .donate-btn {
+            display: inline-block;
+            padding: 1rem 2rem;
+            background: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+            margin-top: 1.5rem;
+        }
+
+        .donate-btn:hover {
+            background: #0056b3;
+        }
+
+        h2 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        h3 {
+            margin: 0;
+            font-size: 1.2rem;
+            font-weight: normal;
+        }
+
+        .copied-tooltip {
+            position: fixed;
+            background: #007bff;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .container {
+            padding-bottom: 5rem;
+        }
+
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            align-items: center;
+            padding: 1rem 2rem;
+            background: #1a1a1a;
+            z-index: 1000;
+            border-bottom: 1px solid #2a2a2a;
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            text-decoration: none;
+            color: white;
+        }
+
+        .nav-brand img {
+            width: 32px;
+            height: auto;
+        }
+
+        .nav-brand h2 {
+            font-size: 1.5rem;
+            margin: 0;
+        }
+
+        .nav-links {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 2rem;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            font-size: 1.1rem;
+            transition: color 0.2s ease;
+            text-transform: lowercase;
+        }
+
+        .nav-links a:hover {
+            color: #007bff;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="/" class="nav-brand">
+            <img src="logo.png" alt="reiVid">
+            <h2>reiVid</h2>
+        </a>
+        <div class="nav-links">
+            <a href="/">home</a>
+            <a href="/about.html">about</a>
+            <a href="/donate.html">donate</a>
+            <a href="/terms.html">terms</a>
+            <a href="/privacy.html">privacy</a>
+        </div>
+    </nav>
+
+    <div class="main-content">
+        <h1>donate</h1>
+        <p>if you find this tool useful, consider supporting its development</p>
+        
+        <div class="donation-container">
+            <div class="donation-box">
+                <h2>paypal</h2>
+                <a href="https://paypal.me/reiloaded" class="donate-btn">donate with PayPal</a>
+            </div>
+
+            <div class="donation-box">
+                <div class="crypto-option" onclick="toggleAddress(this)">
+                    <h3>ethereum</h3>
+                    <div class="crypto-address" onclick="copyAddress(event, this)">0x078B365c62a16F9805D1D91C3249b1fe010A0F2F</div>
+                </div>
+                <div class="crypto-option" onclick="toggleAddress(this)">
+                    <h3>solana</h3>
+                    <div class="crypto-address" onclick="copyAddress(event, this)">5ZWj7a1f8tWkjBESHKgrLmXshuXxqeY9SYcfbshpAqPG</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleAddress(element) {
+            document.querySelectorAll('.crypto-option').forEach(opt => {
+                if (opt !== element) opt.classList.remove('active');
+            });
+            element.classList.toggle('active');
+        }
+
+        function copyAddress(event, element) {
+            event.stopPropagation();
+            navigator.clipboard.writeText(element.textContent).then(() => {
+                showCopiedTooltip(event);
+            });
+        }
+
+        function showCopiedTooltip(event) {
+            const tooltip = document.createElement('div');
+            tooltip.className = 'copied-tooltip';
+            tooltip.textContent = 'Copied!';
+            
+            tooltip.style.left = (event.clientX + 10) + 'px';
+            tooltip.style.top = (event.clientY + 10) + 'px';
+            
+            document.body.appendChild(tooltip);
+            
+            setTimeout(() => tooltip.style.opacity = '1', 0);
+            
+            setTimeout(() => {
+                tooltip.style.opacity = '0';
+                setTimeout(() => document.body.removeChild(tooltip), 200);
+            }, 1000);
+        }
+    </script>
+</body>
+</html> 
