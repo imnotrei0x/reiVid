@@ -141,11 +141,52 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         const file = e.target.files[0];
         if (file) {
-            const maxSize = 100 * 1024 * 1024;
-            if (file.size > maxSize) {
-                alert('File is too large. Maximum size is 100MB');
-                fileInput.value = '';
-                return;
+            if (file.size > 500 * 1024 * 1024) {
+                if (!confirm('Large files may cause performance issues or crashes depending on your device. Continue?')) {
+                    fileInput.value = '';
+                    return;
+                }
+            }
+
+            try {
+                let memoryWarning = false;
+                
+                if (navigator.deviceMemory) {
+                    const deviceMemoryGB = navigator.deviceMemory;
+                    const fileSizeGB = file.size / (1024 * 1024 * 1024);
+                    if (fileSizeGB > deviceMemoryGB / 4) {
+                        memoryWarning = true;
+                    }
+                }
+                
+                if (!memoryWarning && performance.memory) {
+                    if (file.size > performance.memory.jsHeapSizeLimit / 4) {
+                        memoryWarning = true;
+                    }
+                }
+                
+                if (!memoryWarning && navigator.hardwareConcurrency) {
+                    const cores = navigator.hardwareConcurrency;
+                    const estimatedMemoryGB = cores * 0.5;
+                    const fileSizeGB = file.size / (1024 * 1024 * 1024);
+                    if (fileSizeGB > estimatedMemoryGB) {
+                        memoryWarning = true;
+                    }
+                }
+
+                if (memoryWarning && !confirm('This file may be too large for your device to process. Continue anyway?')) {
+                    fileInput.value = '';
+                    return;
+                }
+                
+            } catch (e) {
+                console.debug('Memory check failed:', e);
+                if (file.size > 200 * 1024 * 1024) { 
+                    if (!confirm('Unable to check device memory. Large files may cause issues. Continue anyway?')) {
+                        fileInput.value = '';
+                        return;
+                    }
+                }
             }
 
             const uploadButton = document.querySelector('.upload-button');
