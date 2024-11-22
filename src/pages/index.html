@@ -35,26 +35,18 @@
                     }
                     
                     try {
-                        const reader = new FileReader();
-                        reader.onload = function(e) {
-                            try {
-                                sessionStorage.setItem('pendingVideo', e.target.result);
-                                
-                                const landing = document.getElementById('landing');
-                                landing.classList.add('fade-out');
-                                
-                                setTimeout(() => {
-                                    window.location.href = '/editor';
-                                }, 300);
-                            } catch (error) {
-                                alert('Error preparing video. Please try a smaller file.');
-                                console.error('Storage error:', error);
-                            }
-                        };
-                        reader.readAsDataURL(file);
+                        const objectUrl = URL.createObjectURL(file);
+                        sessionStorage.setItem('pendingVideoUrl', objectUrl);
+                        
+                        const landing = document.getElementById('landing');
+                        landing.classList.add('fade-out');
+                        
+                        setTimeout(() => {
+                            window.location.href = '/editor';
+                        }, 300);
                     } catch (error) {
                         alert('Error preparing video. Please try a smaller file.');
-                        console.error('Storage error:', error);
+                        console.error('Error:', error);
                     }
                 }
             };
@@ -63,7 +55,7 @@
         }
 
         window.addEventListener('load', () => {
-            sessionStorage.removeItem('pendingVideo');
+            sessionStorage.removeItem('pendingVideoUrl');
         });
     </script>
 </head>
