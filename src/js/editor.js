@@ -1,27 +1,5 @@
 document.addEventListener('DOMContentLoaded', async () => {
-    const fileInput = document.getElementById('fileInput');
-    const preview = document.getElementById('preview');
-    const videoPreview = document.getElementById('videoPreview');
-    const playPauseBtn = document.getElementById('playPauseBtn');
-    const timeDisplay = document.getElementById('timeDisplay');
-    const timeSlider = document.getElementById('timeSlider');
-    const endSlider = document.getElementById('endSlider');
-    const cropOverlay = document.getElementById('cropOverlay');
-    const cropPoints = document.querySelectorAll('.crop-point');
-    const downloadBtn = document.getElementById('downloadBtn');
-    const volumeBtn = document.getElementById('volumeBtn');
-    const volumeSlider = document.getElementById('volumeSlider');
-    const formatSelect = document.getElementById('formatSelect');
-    
-    let isDragging = false;
-    let currentPoint = null;
-    let startX, startY, startLeft, startTop, startWidth, startHeight;
-    let currentVideoUrl = null;
-    let selectedQuality = 'original';
-    let processedVideoBlob = null;
-    let previousVolume = 1;
-    let selectedFormat = 'mp4';
-
+    // Initialize FFmpeg right away
     async function initFFmpeg() {
         try {
             if (typeof FFmpeg === 'undefined') {
@@ -47,7 +25,38 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     await initFFmpeg();
+
+    // Only initialize editor elements if we're in editor mode
+    if (document.getElementById('editor').classList.contains('active')) {
+        initializeEditor();
+    }
+});
+
+// Move all editor-specific code into a separate function
+function initializeEditor() {
+    const fileInput = document.getElementById('fileInput');
+    const preview = document.getElementById('preview');
+    const videoPreview = document.getElementById('videoPreview');
+    const playPauseBtn = document.getElementById('playPauseBtn');
+    const timeDisplay = document.getElementById('timeDisplay');
+    const timeSlider = document.getElementById('timeSlider');
+    const endSlider = document.getElementById('endSlider');
+    const cropOverlay = document.getElementById('cropOverlay');
+    const cropPoints = document.querySelectorAll('.crop-point');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const volumeBtn = document.getElementById('volumeBtn');
+    const volumeSlider = document.getElementById('volumeSlider');
+    const formatSelect = document.getElementById('formatSelect');
     
+    let isDragging = false;
+    let currentPoint = null;
+    let startX, startY, startLeft, startTop, startWidth, startHeight;
+    let currentVideoUrl = null;
+    let selectedQuality = 'original';
+    let processedVideoBlob = null;
+    let previousVolume = 1;
+    let selectedFormat = 'mp4';
+
     function handleResize() {
         const wrapperRect = cropOverlay.parentElement.getBoundingClientRect();
         
@@ -517,4 +526,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         selectedFormat = this.value;
         processedVideoBlob = null;
     });
-}); 
+}
+
+// Make startEditing function globally available
+window.startEditing = async function() {
+    document.getElementById('landing').classList.add('hidden');
+    document.getElementById('editor').classList.add('active');
+    initializeEditor(); // Initialize editor elements after they're visible
+    document.getElementById('fileInput').click();
+}; 
