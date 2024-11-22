@@ -23,9 +23,9 @@
 </head>
 <body>
     <div class="container">
-        <div class="video-preview-container" id="preview">
+        <div class="video-preview-container" id="preview" style="display: none;">
             <div class="button-container">
-                <button class="upload-button" onclick="document.getElementById('fileInput').click()">Choose Video</button>
+                <button class="upload-button">Choose Video</button>
                 <select id="formatSelect" class="format-select">
                     <option value="mp4">MP4</option>
                     <option value="webm">WebM</option>
@@ -58,7 +58,7 @@
                     <input type="range" class="volume-slider" id="volumeSlider" value="100" min="0" max="100" step="1">
                 </div>
             </div>
-            <input type="file" id="fileInput" accept="video/*">
+            <input type="file" id="fileInput" accept="video/*" style="display: none;">
         </div>
     </div>
 

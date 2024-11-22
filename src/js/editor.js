@@ -46,10 +46,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    const container = document.querySelector('.container');
+    const uploadButton = document.querySelector('.upload-button');
+    if (uploadButton) {
+        uploadButton.onclick = () => document.getElementById('fileInput').click();
+    }
+
     await initFFmpeg();
     
-    document.getElementById('fileInput').click();
-
     function handleResize() {
         const wrapperRect = cropOverlay.parentElement.getBoundingClientRect();
         
