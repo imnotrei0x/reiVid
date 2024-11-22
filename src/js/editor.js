@@ -64,15 +64,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
-    try {
-        const pendingVideo = await videoStore.getVideo();
-        if (pendingVideo) {
+    const videoPath = localStorage.getItem('videoPath');
+    if (videoPath) {
+        try {
             await initFFmpeg();
             
-            currentVideoUrl = URL.createObjectURL(pendingVideo);
-            videoPreview.src = currentVideoUrl;
-            
-            await videoStore.cleanup();
+            videoPreview.src = videoPath;
+            localStorage.removeItem('videoPath');
             
             const loadPromise = new Promise((resolve, reject) => {
                 videoPreview.addEventListener('loadedmetadata', resolve, { once: true });
@@ -92,14 +90,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             resetCropOverlay();
             updateTimeDisplay();
             downloadBtn.disabled = false;
+        } catch (error) {
+            console.error('Error loading video:', error);
+            alert('Error loading video: ' + error.message);
+            videoPreview.src = '';
+            cleanupVideoUrl();
+            cleanupFFmpeg();
+            window.location.href = '/';
         }
-    } catch (error) {
-        console.error('Error loading video:', error);
-        alert('Error loading video: ' + error.message);
-        videoPreview.src = '';
-        cleanupVideoUrl();
-        cleanupFFmpeg();
-        window.location.href = '/';
     }
 
     async function initFFmpeg() {
