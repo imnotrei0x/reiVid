@@ -51,7 +51,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             updateTimeDisplay();
             downloadBtn.disabled = false;
         } catch (error) {
-            console.error(error);
+            console.error('Error loading video:', error);
             alert('Error loading video: ' + error.message);
             videoPreview.src = '';
             cleanupVideoUrl();
@@ -63,24 +63,34 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function initFFmpeg() {
         try {
             if (typeof FFmpeg === 'undefined') {
-                throw new Error('FFmpeg failed to load');
+                throw new Error('FFmpeg failed to load. Please check your internet connection and try again.');
             }
             
-            const { createFFmpeg } = FFmpeg;
-            window.ffmpeg = createFFmpeg({
-                log: true,
-                corePath: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js'
-            });
+            if (!window.ffmpeg) {
+                const { createFFmpeg } = FFmpeg;
+                window.ffmpeg = createFFmpeg({
+                    log: true,
+                    corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js'
+                });
+            }
             
-            await window.ffmpeg.load();
+            if (!window.ffmpeg.isLoaded()) {
+                await window.ffmpeg.load();
+                console.log('FFmpeg loaded successfully');
+            }
         } catch (err) {
-            throw new Error('FFmpeg initialization error: ' + err.message);
+            console.error('FFmpeg initialization error:', err);
+            throw new Error('Failed to initialize video processing. Please try again or use a different browser.');
         }
     }
 
     function cleanupFFmpeg() {
         if (window.ffmpeg) {
-            window.ffmpeg.exit();
+            try {
+                window.ffmpeg.exit();
+            } catch (e) {
+                console.error('FFmpeg cleanup error:', e);
+            }
             window.ffmpeg = null;
         }
     }
