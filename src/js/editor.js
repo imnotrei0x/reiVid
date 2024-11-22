@@ -46,12 +46,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    const container = document.querySelector('.container');
-    const uploadButton = document.querySelector('.upload-button');
-    if (uploadButton) {
-        uploadButton.onclick = () => document.getElementById('fileInput').click();
-    }
-
     await initFFmpeg();
     
     function handleResize() {
@@ -102,26 +96,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         const file = e.target.files[0];
         if (file) {
-            const maxSize = 500 * 1024 * 1024;
-            if (file.size > maxSize) {
-                alert('File is too large. Maximum size is 500MB');
-                fileInput.value = '';
-                return;
-            }
-
             try {
                 document.getElementById('initialUpload').classList.add('hidden');
                 document.getElementById('preview').style.display = 'flex';
                 
-                const uploadButton = document.querySelector('.upload-button');
-                uploadButton.disabled = true;
-                uploadButton.textContent = 'Loading FFmpeg...';
-
-                if (!window.ffmpeg) {
-                    await initFFmpeg();
-                }
-
-                cleanupVideoUrl();
                 currentVideoUrl = URL.createObjectURL(file);
                 videoPreview.src = currentVideoUrl;
                 
@@ -136,7 +114,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                     throw new Error('Video must be at least 1 second long');
                 }
                 
-                preview.style.display = 'flex';
                 timeSlider.value = 0;
                 endSlider.value = 100;
                 videoPreview.currentTime = 0;
@@ -149,16 +126,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 alert('Error loading video: ' + error.message);
                 videoPreview.src = '';
                 cleanupVideoUrl();
-                cleanupFFmpeg();
                 fileInput.value = '';
                 downloadBtn.disabled = true;
-            } finally {
-                uploadButton.disabled = false;
-                uploadButton.textContent = 'Choose Video';
+                document.getElementById('initialUpload').classList.remove('hidden');
+                document.getElementById('preview').style.display = 'none';
             }
-        } else {
-            cleanupFFmpeg();
-            downloadBtn.disabled = true;
         }
     });
 

@@ -38,13 +38,12 @@
     <div class="container">
         <div class="initial-upload" id="initialUpload">
             <h1>reiVid</h1>
-            <button class="upload-button">Choose Video</button>
-            <input type="file" id="fileInput" accept="video/*" style="display: none;">
+            <button class="upload-button" onclick="document.getElementById('fileInput').click()">Choose Video</button>
         </div>
 
         <div class="video-preview-container" id="preview" style="display: none;">
             <div class="button-container">
-                <button class="upload-button">Choose Video</button>
+                <button class="upload-button" onclick="document.getElementById('fileInput').click()">Choose Video</button>
                 <select id="formatSelect" class="format-select">
                     <option value="mp4">MP4</option>
                     <option value="webm">WebM</option>
@@ -77,8 +76,8 @@
                     <input type="range" class="volume-slider" id="volumeSlider" value="100" min="0" max="100" step="1">
                 </div>
             </div>
-            <input type="file" id="fileInput" accept="video/*" style="display: none;">
         </div>
+        <input type="file" id="fileInput" accept="video/*" style="display: none;">
     </div>
 
     <script>
