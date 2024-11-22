@@ -19,10 +19,29 @@
         .fade-in {
             opacity: 1 !important;
         }
+
+        .initial-upload {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            gap: 1rem;
+        }
+
+        .initial-upload.hidden {
+            display: none;
+        }
     </style>
 </head>
 <body>
     <div class="container">
+        <div class="initial-upload" id="initialUpload">
+            <h1>reiVid</h1>
+            <button class="upload-button">Choose Video</button>
+            <input type="file" id="fileInput" accept="video/*" style="display: none;">
+        </div>
+
         <div class="video-preview-container" id="preview" style="display: none;">
             <div class="button-container">
                 <button class="upload-button">Choose Video</button>

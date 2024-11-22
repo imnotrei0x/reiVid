@@ -109,11 +109,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             }
 
-            const uploadButton = document.querySelector('.upload-button');
-            uploadButton.disabled = true;
-            uploadButton.textContent = 'Loading FFmpeg...';
-
             try {
+                document.getElementById('initialUpload').classList.add('hidden');
+                document.getElementById('preview').style.display = 'flex';
+                
+                const uploadButton = document.querySelector('.upload-button');
+                uploadButton.disabled = true;
+                uploadButton.textContent = 'Loading FFmpeg...';
+
                 if (!window.ffmpeg) {
                     await initFFmpeg();
                 }
