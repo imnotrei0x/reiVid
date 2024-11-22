@@ -22,6 +22,30 @@ document.addEventListener('DOMContentLoaded', async () => {
     let previousVolume = 1;
     let selectedFormat = 'mp4';
 
+    async function initFFmpeg() {
+        try {
+            if (typeof FFmpeg === 'undefined') {
+                throw new Error('FFmpeg failed to load. Please check your internet connection and try again.');
+            }
+            
+            if (!window.ffmpeg) {
+                const { createFFmpeg } = FFmpeg;
+                window.ffmpeg = createFFmpeg({
+                    log: true,
+                    corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js'
+                });
+            }
+            
+            if (!window.ffmpeg.isLoaded()) {
+                await window.ffmpeg.load();
+                console.log('FFmpeg loaded successfully');
+            }
+        } catch (err) {
+            console.error('FFmpeg initialization error:', err);
+            throw new Error('Failed to initialize video processing. Please try again or use a different browser.');
+        }
+    }
+
     await initFFmpeg();
     
     document.getElementById('fileInput').click();
