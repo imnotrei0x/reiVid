@@ -7,34 +7,65 @@
     <meta name="msapplication-TileImage" content="/assets/favicon.ico">
     <meta property="og:image" content="/assets/logo.png">
     <link rel="stylesheet" href="/styles/styles.css">
-    <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.0/dist/ffmpeg.min.js"></script>
-    <script src="https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js"></script>
-    <script src="/js/editor.js"></script>
     <style>
-        .editor-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: #1a1a1a;
-            z-index: 1000;
-            display: none;
+        .fade-out {
+            opacity: 0 !important;
+            transition: opacity 0.3s ease-out;
         }
         
-        .editor-overlay.active {
-            display: block;
-        }
-
         #landing {
             opacity: 1;
             transition: opacity 0.3s ease-in;
         }
-        
-        #landing.hidden {
-            display: none;
-        }
     </style>
+    <script>
+        function handleFileSelect() {
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = 'video/*';
+            fileInput.style.display = 'none';
+            
+            fileInput.onchange = function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const maxSize = 100 * 1024 * 1024; 
+                    if (file.size > maxSize) {
+                        alert('File is too large. Maximum size is 100MB');
+                        return;
+                    }
+                    
+                    try {
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            try {
+                                sessionStorage.setItem('pendingVideo', e.target.result);
+                                
+                                const landing = document.getElementById('landing');
+                                landing.classList.add('fade-out');
+                                
+                                setTimeout(() => {
+                                    window.location.href = '/editor';
+                                }, 300);
+                            } catch (error) {
+                                alert('Error preparing video. Please try a smaller file.');
+                                console.error('Storage error:', error);
+                            }
+                        };
+                        reader.readAsDataURL(file);
+                    } catch (error) {
+                        alert('Error preparing video. Please try a smaller file.');
+                        console.error('Storage error:', error);
+                    }
+                }
+            };
+            
+            fileInput.click();
+        }
+
+        window.addEventListener('load', () => {
+            sessionStorage.removeItem('pendingVideo');
+        });
+    </script>
 </head>
 <body>
     <div class="container" id="landing">
@@ -52,32 +83,5 @@
             <a href="/privacy">privacy</a>
         </div>
     </div>
-
-    <div class="editor-overlay" id="editor">
-        <!-- Copy the contents of editor.html here -->
-    </div>
-
-    <script>
-        function handleFileSelect() {
-            const fileInput = document.createElement('input');
-            fileInput.type = 'file';
-            fileInput.accept = 'video/*';
-            fileInput.style.display = 'none';
-            
-            fileInput.onchange = async function(e) {
-                const file = e.target.files[0];
-                if (file) {
-                    document.getElementById('landing').classList.add('hidden');
-                    document.getElementById('editor').classList.add('active');
-                    
-                    // Create URL for the video file
-                    const videoUrl = URL.createObjectURL(file);
-                    initEditor(videoUrl);
-                }
-            };
-            
-            fileInput.click();
-        }
-    </script>
 </body>
 </html>
