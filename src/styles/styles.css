@@ -80,7 +80,6 @@ h1 {
     opacity: 1;
 }
 
-/* Editor specific styles */
 .video-preview-container {
     display: flex;
     width: 80vw;
@@ -127,7 +126,6 @@ h1 {
     display: none;
 }
 
-/* Slider styles */
 .slider-container {
     position: relative;
     flex-grow: 1;
@@ -200,7 +198,6 @@ h1 {
     transform: scale(1.2);
 }
 
-/* Crop overlay styles */
 .crop-container {
     position: absolute;
     top: 0;
@@ -251,7 +248,6 @@ h1 {
     right: -10px; 
 }
 
-/* Control button styles */
 .play-pause-btn {
     background: transparent;
     border: none;
@@ -277,7 +273,6 @@ h1 {
     font-size: 14px;
 }
 
-/* Volume control styles */
 .volume-control {
     display: flex;
     align-items: center;
@@ -338,7 +333,6 @@ h1 {
     transform: scale(1.2);
 }
 
-/* User selection prevention */
 .container,
 .header,
 .logo,
@@ -357,7 +351,6 @@ h1,
     -ms-user-select: none;
 }
 
-/* Add/update these styles in the existing file */
 .format-select {
     padding: 0.75rem 1.5rem;
     font-size: 1rem;

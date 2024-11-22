@@ -28,22 +28,19 @@
             fileInput.onchange = function(e) {
                 const file = e.target.files[0];
                 if (file) {
-                    const maxSize = 100 * 1024 * 1024; // 100MB
+                    const maxSize = 100 * 1024 * 1024; 
                     if (file.size > maxSize) {
                         alert('File is too large. Maximum size is 100MB');
                         return;
                     }
                     
-                    // Read file and store in localStorage
                     const reader = new FileReader();
                     reader.onload = function(e) {
                         localStorage.setItem('pendingVideo', e.target.result);
                         
-                        // Add fade out effect before navigation
                         const landing = document.getElementById('landing');
                         landing.classList.add('fade-out');
                         
-                        // Wait for fade out to complete before navigating
                         setTimeout(() => {
                             window.location.href = '/editor.html';
                         }, 300);

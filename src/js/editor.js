@@ -22,17 +22,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     let previousVolume = 1;
     let selectedFormat = 'mp4';
 
-    // Check for pending video in localStorage
     const pendingVideoData = localStorage.getItem('pendingVideo');
     if (pendingVideoData) {
         try {
-            // Clear localStorage
             localStorage.removeItem('pendingVideo');
             
-            // Initialize FFmpeg
             await initFFmpeg();
             
-            // Create video blob from data URL
             const response = await fetch(pendingVideoData);
             const blob = await response.blob();
             currentVideoUrl = URL.createObjectURL(blob);
@@ -157,7 +153,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             uploadButton.textContent = 'Loading FFmpeg...';
 
             try {
-                // Make sure FFmpeg is initialized
                 if (!window.ffmpeg) {
                     await initFFmpeg();
                 }
@@ -437,7 +432,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         downloadBtn.textContent = 'Loading FFmpeg...';
 
         try {
-            // Always reinitialize FFmpeg when processing a new video
             await initFFmpeg();
             
             if (!videoPreview.src) {
@@ -474,7 +468,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 '-filter:v', `crop=${cropWidth}:${cropHeight}:${cropX}:${cropY}`
             ];
 
-            // Add format-specific settings
             switch(selectedFormat) {
                 case 'mp4':
                     ffmpegArgs.push(
@@ -491,13 +484,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 case 'webm':
                     ffmpegArgs.push(
                         '-c:v', 'libvpx-vp9',
-                        '-deadline', 'realtime',  // Faster encoding
-                        '-cpu-used', '4',        // Higher value = faster (range 0-8)
-                        '-crf', '30',            // Quality setting
-                        '-b:v', '0',             // Let CRF control bitrate
-                        '-row-mt', '1',          // Enable row-based multithreading
-                        '-tile-columns', '2',    // Enable tile columns for parallelization
-                        '-threads', '4',         // Use multiple threads
+                        '-deadline', 'realtime',  
+                        '-cpu-used', '4',        
+                        '-crf', '30',
+                        '-b:v', '0',             
+                        '-row-mt', '1',
+                        '-tile-columns', '2',    
+                        '-threads', '4',         
                         '-c:a', 'libopus',
                         '-b:a', '128k'
                     );
@@ -509,14 +502,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                         '-t', duration.toString(),
                         '-filter:v',
                         `crop=${cropWidth}:${cropHeight}:${cropX}:${cropY},` +
-                        'fps=12,' + // Further reduced FPS
-                        'scale=320:-1:flags=lanczos,' + // Reduced width more
-                        // Two-pass approach with better palette generation
+                        'fps=12,' + 
+                        'scale=320:-1:flags=lanczos,' + 
                         'split[s0][s1];' +
                         '[s0]palettegen=max_colors=64:reserve_transparent=0:stats_mode=single[p];' +
                         '[s1][p]paletteuse=dither=floyd_steinberg:diff_mode=rectangle:new=1'
                     ];
-                    // Add loglevel to reduce spam
                     ffmpegArgs.unshift('-loglevel', 'warning');
                     break;
             }
@@ -589,7 +580,5 @@ document.addEventListener('DOMContentLoaded', async () => {
     formatSelect.addEventListener('change', async function() {
         selectedFormat = this.value;
         processedVideoBlob = null;
-        
-        // No need to reinitialize FFmpeg here - we'll do it when processing
     });
 }); 

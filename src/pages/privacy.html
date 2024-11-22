@@ -57,7 +57,7 @@
         <p>This privacy policy may be updated occasionally. Last updated: March 2024</p>
     </div>
     <script>
-        fetch('/components/navbar.html')
+        fetch('../components/navbar.html')
             .then(response => response.text())
             .then(data => {
                 document.getElementById('navbar-placeholder').innerHTML = data;
