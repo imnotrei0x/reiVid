@@ -1,42 +1,4 @@
 document.addEventListener('DOMContentLoaded', async () => {
-    async function initFFmpeg() {
-        try {
-            if (typeof FFmpeg === 'undefined') {
-                throw new Error('FFmpeg failed to load. Please check your internet connection and try again.');
-            }
-            
-            if (!window.ffmpeg) {
-                const { createFFmpeg } = FFmpeg;
-                window.ffmpeg = createFFmpeg({
-                    log: true,
-                    corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js'
-                });
-            }
-            
-            if (!window.ffmpeg.isLoaded()) {
-                await window.ffmpeg.load();
-                console.log('FFmpeg loaded successfully');
-            }
-        } catch (err) {
-            console.error('FFmpeg initialization error:', err);
-            throw new Error('Failed to initialize video processing. Please try again or use a different browser.');
-        }
-    }
-
-    await initFFmpeg();
-});
-
-window.startEditing = async function() {
-    document.getElementById('landing').classList.add('hidden');
-    document.getElementById('editor').classList.add('active');
-    
-    setTimeout(() => {
-        initializeEditor();
-        document.getElementById('fileInput').click();
-    }, 0);
-};
-
-function initializeEditor() {
     const fileInput = document.getElementById('fileInput');
     const preview = document.getElementById('preview');
     const videoPreview = document.getElementById('videoPreview');
@@ -59,6 +21,77 @@ function initializeEditor() {
     let processedVideoBlob = null;
     let previousVolume = 1;
     let selectedFormat = 'mp4';
+
+    const pendingVideoData = localStorage.getItem('pendingVideo');
+    if (pendingVideoData) {
+        try {
+            localStorage.removeItem('pendingVideo');
+            
+            await initFFmpeg();
+            
+            const response = await fetch(pendingVideoData);
+            const blob = await response.blob();
+            currentVideoUrl = URL.createObjectURL(blob);
+            videoPreview.src = currentVideoUrl;
+            
+            const loadPromise = new Promise((resolve, reject) => {
+                videoPreview.addEventListener('loadedmetadata', resolve, { once: true });
+                videoPreview.addEventListener('error', reject, { once: true });
+            });
+
+            await loadPromise;
+            
+            if (videoPreview.duration < 1) {
+                throw new Error('Video must be at least 1 second long');
+            }
+            
+            preview.style.display = 'flex';
+            timeSlider.value = 0;
+            endSlider.value = 100;
+            videoPreview.currentTime = 0;
+            resetCropOverlay();
+            updateTimeDisplay();
+            downloadBtn.disabled = false;
+        } catch (error) {
+            console.error(error);
+            alert('Error loading video: ' + error.message);
+            videoPreview.src = '';
+            cleanupVideoUrl();
+            cleanupFFmpeg();
+            window.location.href = '/';
+        }
+    }
+
+    async function initFFmpeg() {
+        try {
+            if (typeof FFmpeg === 'undefined') {
+                throw new Error('FFmpeg failed to load');
+            }
+            
+            const { createFFmpeg } = FFmpeg;
+            window.ffmpeg = createFFmpeg({
+                log: true,
+                corePath: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js'
+            });
+            
+            await window.ffmpeg.load();
+        } catch (err) {
+            throw new Error('FFmpeg initialization error: ' + err.message);
+        }
+    }
+
+    function cleanupFFmpeg() {
+        if (window.ffmpeg) {
+            window.ffmpeg.exit();
+            window.ffmpeg = null;
+        }
+    }
+
+    function cleanupVideoUrl() {
+        if (currentVideoUrl) {
+            URL.revokeObjectURL(currentVideoUrl);
+        }
+    }
 
     function handleResize() {
         const wrapperRect = cropOverlay.parentElement.getBoundingClientRect();
@@ -108,10 +141,23 @@ function initializeEditor() {
         
         const file = e.target.files[0];
         if (file) {
+            const maxSize = 100 * 1024 * 1024;
+            if (file.size > maxSize) {
+                alert('File is too large. Maximum size is 100MB');
+                fileInput.value = '';
+                return;
+            }
+
+            const uploadButton = document.querySelector('.upload-button');
+            uploadButton.disabled = true;
+            uploadButton.textContent = 'Loading FFmpeg...';
+
             try {
-                document.getElementById('initialUpload').classList.add('hidden');
-                document.getElementById('preview').style.display = 'flex';
-                
+                if (!window.ffmpeg) {
+                    await initFFmpeg();
+                }
+
+                cleanupVideoUrl();
                 currentVideoUrl = URL.createObjectURL(file);
                 videoPreview.src = currentVideoUrl;
                 
@@ -126,6 +172,7 @@ function initializeEditor() {
                     throw new Error('Video must be at least 1 second long');
                 }
                 
+                preview.style.display = 'flex';
                 timeSlider.value = 0;
                 endSlider.value = 100;
                 videoPreview.currentTime = 0;
@@ -138,11 +185,16 @@ function initializeEditor() {
                 alert('Error loading video: ' + error.message);
                 videoPreview.src = '';
                 cleanupVideoUrl();
+                cleanupFFmpeg();
                 fileInput.value = '';
                 downloadBtn.disabled = true;
-                document.getElementById('initialUpload').classList.remove('hidden');
-                document.getElementById('preview').style.display = 'none';
+            } finally {
+                uploadButton.disabled = false;
+                uploadButton.textContent = 'Choose Video';
             }
+        } else {
+            cleanupFFmpeg();
+            downloadBtn.disabled = true;
         }
     });
 
@@ -529,14 +581,4 @@ function initializeEditor() {
         selectedFormat = this.value;
         processedVideoBlob = null;
     });
-}
-
-window.startEditing = async function() {
-    document.getElementById('landing').classList.add('hidden');
-    document.getElementById('editor').classList.add('active');
-    
-    setTimeout(() => {
-        initializeEditor();
-        document.getElementById('fileInput').click();
-    }, 0);
-}; 
+}); 
