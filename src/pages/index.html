@@ -40,7 +40,7 @@
             <h1>reiVid</h1>
         </div>
         <p class="description">trim and crop videos in your browser</p>
-        <button class="upload-button" onclick="startEditing()">Start Editing</button>
+        <button class="upload-button" onclick="document.getElementById('fileInput').click()">Start Editing</button>
         
         <div class="footer-links">
             <a href="/about">about</a>
@@ -91,11 +91,12 @@
     </div>
 
     <script>
-        function startEditing() {
-            document.getElementById('landing').classList.add('hidden');
-            document.getElementById('editor').classList.add('active');
-            document.getElementById('fileInput').click();
-        }
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            if (e.target.files.length > 0) {
+                document.getElementById('landing').classList.add('hidden');
+                document.getElementById('editor').classList.add('active');
+            }
+        });
     </script>
 </body>
 </html>
