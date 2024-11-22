@@ -8,18 +8,22 @@ No server-side processing is required.
 - **Crop Video**: Use a draggable overlay to define your desired area.
 - **Trim Video**: Adjust start and end points with a dual-slider timeline.
 - **Real-Time Preview**: See your edits before exporting.
-- **Download Processed Video**: Save your edited video with a single click.
+- **Multiple Formats**: Export as MP4, WebM, or GIF.
+- **Device-Aware**: Intelligent memory and capability checks.
 - **Privacy-Focused**: Works entirely in your browser—no uploads or data sharing.
 
 ## Usage
-1. **Upload a Video**: Click the "Upload Video" button and select a file.
-2. **Crop**: Adjust the red corner points of the overlay to crop your video.
-3. **Trim**: Use the blue and red sliders on the timeline to set the start and end points.
-4. **Download**: Click "Download Video" to process and save the edited video to your device.
+1. **Upload a Video**: Click "Start Editing" and select a video file.
+2. **Memory Check**: Your device's capabilities will be checked for the selected file.
+3. **Crop**: Adjust the red corner points of the overlay to crop your video.
+4. **Trim**: Use the blue and red sliders on the timeline to set the start and end points.
+5. **Choose Format**: Select your desired output format (MP4, WebM, or GIF).
+6. **Download**: Click "Download Video" to process and save the edited video to your device.
 
 ## Technical Details
 - **Frontend**: Built with vanilla JavaScript and minimal CSS.
 - **Video Processing**: Powered by [FFmpeg.wasm](https://github.com/ffmpegwasm/ffmpeg.wasm), a WebAssembly build of FFmpeg.
+- **Device Awareness**: Uses browser APIs to check device capabilities.
 - **Hosting**: Designed for browser-only operation; no server interaction required.
 
 ## License
