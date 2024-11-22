@@ -7,48 +7,34 @@
     <meta name="msapplication-TileImage" content="/assets/favicon.ico">
     <meta property="og:image" content="/assets/logo.png">
     <link rel="stylesheet" href="/styles/styles.css">
+    <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.0/dist/ffmpeg.min.js"></script>
+    <script src="https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js"></script>
+    <script src="/js/editor.js"></script>
     <style>
-        .fade-out {
-            opacity: 0 !important;
-            transition: opacity 0.3s ease-out;
+        .editor-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #1a1a1a;
+            z-index: 1000;
+            display: none;
         }
         
+        .editor-overlay.active {
+            display: block;
+        }
+
         #landing {
             opacity: 1;
             transition: opacity 0.3s ease-in;
         }
-    </style>
-    <script>
-        function handleFileSelect() {
-            const fileInput = document.createElement('input');
-            fileInput.type = 'file';
-            fileInput.accept = 'video/*';
-            fileInput.style.display = 'none';
-            
-            fileInput.onchange = function(e) {
-                const file = e.target.files[0];
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        const base64 = e.target.result;
-                        const landing = document.getElementById('landing');
-                        landing.classList.add('fade-out');
-                        
-                        setTimeout(() => {
-                            window.location.href = `/editor#${encodeURIComponent(base64)}`;
-                        }, 300);
-                    };
-                    reader.readAsDataURL(file);
-                }
-            };
-            
-            fileInput.click();
+        
+        #landing.hidden {
+            display: none;
         }
-
-        window.addEventListener('load', () => {
-            localStorage.removeItem('videoPath');
-        });
-    </script>
+    </style>
 </head>
 <body>
     <div class="container" id="landing">
@@ -66,5 +52,32 @@
             <a href="/privacy">privacy</a>
         </div>
     </div>
+
+    <div class="editor-overlay" id="editor">
+        <!-- Copy the contents of editor.html here -->
+    </div>
+
+    <script>
+        function handleFileSelect() {
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = 'video/*';
+            fileInput.style.display = 'none';
+            
+            fileInput.onchange = async function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    document.getElementById('landing').classList.add('hidden');
+                    document.getElementById('editor').classList.add('active');
+                    
+                    // Create URL for the video file
+                    const videoUrl = URL.createObjectURL(file);
+                    initEditor(videoUrl);
+                }
+            };
+            
+            fileInput.click();
+        }
+    </script>
 </body>
 </html>
