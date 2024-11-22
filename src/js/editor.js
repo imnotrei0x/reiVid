@@ -25,12 +25,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     const pendingVideoUrl = sessionStorage.getItem('pendingVideoUrl');
     if (pendingVideoUrl) {
         try {
-            sessionStorage.removeItem('pendingVideoUrl');
-            
             await initFFmpeg();
             
-            currentVideoUrl = pendingVideoUrl;
+            const response = await fetch(pendingVideoUrl);
+            const blob = await response.blob();
+            
+            currentVideoUrl = URL.createObjectURL(blob);
             videoPreview.src = currentVideoUrl;
+            
+            URL.revokeObjectURL(pendingVideoUrl);
+            sessionStorage.removeItem('pendingVideoUrl');
             
             const loadPromise = new Promise((resolve, reject) => {
                 videoPreview.addEventListener('loadedmetadata', resolve, { once: true });

@@ -35,15 +35,20 @@
                     }
                     
                     try {
-                        const objectUrl = URL.createObjectURL(file);
-                        sessionStorage.setItem('pendingVideoUrl', objectUrl);
-                        
-                        const landing = document.getElementById('landing');
-                        landing.classList.add('fade-out');
-                        
-                        setTimeout(() => {
-                            window.location.href = '/editor';
-                        }, 300);
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            const blob = new Blob([e.target.result], { type: file.type });
+                            const objectUrl = URL.createObjectURL(blob);
+                            sessionStorage.setItem('pendingVideoUrl', objectUrl);
+                            
+                            const landing = document.getElementById('landing');
+                            landing.classList.add('fade-out');
+                            
+                            setTimeout(() => {
+                                window.location.href = '/editor';
+                            }, 300);
+                        };
+                        reader.readAsArrayBuffer(file);
                     } catch (error) {
                         alert('Error preparing video. Please try a smaller file.');
                         console.error('Error:', error);
@@ -55,7 +60,11 @@
         }
 
         window.addEventListener('load', () => {
-            sessionStorage.removeItem('pendingVideoUrl');
+            const oldUrl = sessionStorage.getItem('pendingVideoUrl');
+            if (oldUrl) {
+                URL.revokeObjectURL(oldUrl);
+                sessionStorage.removeItem('pendingVideoUrl');
+            }
         });
     </script>
 </head>
