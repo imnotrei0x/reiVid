@@ -1,5 +1,4 @@
 document.addEventListener('DOMContentLoaded', async () => {
-    // Initialize FFmpeg right away
     async function initFFmpeg() {
         try {
             if (typeof FFmpeg === 'undefined') {
@@ -25,14 +24,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     await initFFmpeg();
-
-    // Only initialize editor elements if we're in editor mode
-    if (document.getElementById('editor').classList.contains('active')) {
-        initializeEditor();
-    }
 });
 
-// Move all editor-specific code into a separate function
+window.startEditing = async function() {
+    document.getElementById('landing').classList.add('hidden');
+    document.getElementById('editor').classList.add('active');
+    
+    setTimeout(() => {
+        initializeEditor();
+        document.getElementById('fileInput').click();
+    }, 0);
+};
+
 function initializeEditor() {
     const fileInput = document.getElementById('fileInput');
     const preview = document.getElementById('preview');
@@ -528,10 +531,12 @@ function initializeEditor() {
     });
 }
 
-// Make startEditing function globally available
 window.startEditing = async function() {
     document.getElementById('landing').classList.add('hidden');
     document.getElementById('editor').classList.add('active');
-    initializeEditor(); // Initialize editor elements after they're visible
-    document.getElementById('fileInput').click();
+    
+    setTimeout(() => {
+        initializeEditor();
+        document.getElementById('fileInput').click();
+    }, 0);
 }; 
