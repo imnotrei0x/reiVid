@@ -22,19 +22,57 @@ document.addEventListener('DOMContentLoaded', async () => {
     let previousVolume = 1;
     let selectedFormat = 'mp4';
 
-    const pendingVideoUrl = sessionStorage.getItem('pendingVideoUrl');
-    if (pendingVideoUrl) {
-        try {
+    const videoStore = {
+        async init() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open('VideoDatabase', 1);
+                
+                request.onerror = () => reject(request.error);
+                request.onsuccess = () => resolve(request.result);
+                
+                request.onupgradeneeded = (event) => {
+                    const db = event.target.result;
+                    if (!db.objectStoreNames.contains('videos')) {
+                        db.createObjectStore('videos');
+                    }
+                };
+            });
+        },
+        
+        async getVideo() {
+            const db = await this.init();
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(['videos'], 'readonly');
+                const store = transaction.objectStore('videos');
+                const request = store.get('pendingVideo');
+                
+                request.onerror = () => reject(request.error);
+                request.onsuccess = () => resolve(request.result);
+            });
+        },
+        
+        async cleanup() {
+            const db = await this.init();
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(['videos'], 'readwrite');
+                const store = transaction.objectStore('videos');
+                const request = store.delete('pendingVideo');
+                
+                request.onerror = () => reject(request.error);
+                request.onsuccess = () => resolve();
+            });
+        }
+    };
+
+    try {
+        const pendingVideo = await videoStore.getVideo();
+        if (pendingVideo) {
             await initFFmpeg();
             
-            const response = await fetch(pendingVideoUrl);
-            const blob = await response.blob();
-            
-            currentVideoUrl = URL.createObjectURL(blob);
+            currentVideoUrl = URL.createObjectURL(pendingVideo);
             videoPreview.src = currentVideoUrl;
             
-            URL.revokeObjectURL(pendingVideoUrl);
-            sessionStorage.removeItem('pendingVideoUrl');
+            await videoStore.cleanup();
             
             const loadPromise = new Promise((resolve, reject) => {
                 videoPreview.addEventListener('loadedmetadata', resolve, { once: true });
@@ -54,14 +92,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             resetCropOverlay();
             updateTimeDisplay();
             downloadBtn.disabled = false;
-        } catch (error) {
-            console.error('Error loading video:', error);
-            alert('Error loading video: ' + error.message);
-            videoPreview.src = '';
-            cleanupVideoUrl();
-            cleanupFFmpeg();
-            window.location.href = '/';
         }
+    } catch (error) {
+        console.error('Error loading video:', error);
+        alert('Error loading video: ' + error.message);
+        videoPreview.src = '';
+        cleanupVideoUrl();
+        cleanupFFmpeg();
+        window.location.href = '/';
     }
 
     async function initFFmpeg() {
