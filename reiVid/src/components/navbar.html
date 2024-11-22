@@ -1,0 +1,65 @@
+<nav class="navbar">
+    <a href="/" class="nav-brand">
+        <img src="/logo.png" alt="reiVid">
+        <h2>reiVid</h2>
+    </a>
+    <div class="nav-links">
+        <a href="/">home</a>
+        <a href="/about.html">about</a>
+        <a href="/donate.html">donate</a>
+        <a href="/terms.html">terms</a>
+        <a href="/privacy.html">privacy</a>
+    </div>
+</nav>
+
+<style>
+.navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    padding: 1rem 2rem;
+    background: #1a1a1a;
+    z-index: 1000;
+}
+
+.nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    text-decoration: none;
+    color: white;
+}
+
+.nav-brand img {
+    width: 32px;
+    height: auto;
+}
+
+.nav-brand h2 {
+    font-size: 1.5rem;
+    margin: 0;
+}
+
+.nav-links {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 2rem;
+}
+
+.nav-links a {
+    color: white;
+    text-decoration: none;
+    font-size: 1.1rem;
+    transition: color 0.2s ease;
+    text-transform: lowercase;
+}
+
+.nav-links a:hover {
+    color: #007bff;
+}
+</style> 

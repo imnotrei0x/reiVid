@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>about</title>
+    <link rel="icon" type="image/x-icon" href="/assets/favicon.ico">
+    <link rel="icon" type="image/png" href="/assets/logo.png">
+    <link rel="stylesheet" href="/styles/common.css">
+</head>
+<body>
+    <div id="navbar-placeholder"></div>
+
+    <div class="main-content">
+        <h1>about</h1>
+        <p>reiVid is a <span class="highlight">free</span> website that allows you to trim and crop videos directly in your browser.</p>
+        <p>all processing happens <span class="highlight">locally on your device</span>.</p>
+        <p>no data collection, no tracking, no cookies, no ads, no login - but why?<br>because I had a hard time finding a simple tool.</p>
+        <p>powered by <a href="https://github.com/ffmpegwasm/ffmpeg.wasm" target="_blank">FFmpeg.wasm</a>, a WebAssembly build of FFmpeg</p>
+        <p>if you like it, feel free to <a href="/donate.html">donate</a></p>
+        <p>visit the project on <a href="https://github.com/imnotrei0x/reiVid" target="_blank">github</a> or on <a href="https://x.com/reiloaded" target="_blank">x/twitter</a></p>
+    </div>
+
+    <script>
+        fetch('/components/navbar.html')
+            .then(response => response.text())
+            .then(data => {
+                document.getElementById('navbar-placeholder').innerHTML = data;
+            });
+    </script>
+</body>
+</html> 

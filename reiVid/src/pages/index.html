@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>reiVid</title>
+    <link rel="icon" type="image/x-icon" href="/assets/favicon.ico">
+    <link rel="icon" type="image/png" href="/assets/logo.png">
+    <meta name="msapplication-TileImage" content="/assets/favicon.ico">
+    <meta property="og:image" content="/assets/logo.png">
+    <link rel="stylesheet" href="/styles/styles.css">
+    <style>
+        .fade-out {
+            opacity: 0 !important;
+            transition: opacity 0.3s ease-out;
+        }
+        
+        #landing {
+            opacity: 1;
+            transition: opacity 0.3s ease-in;
+        }
+    </style>
+    <script>
+        function handleFileSelect() {
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = 'video/*';
+            fileInput.style.display = 'none';
+            
+            fileInput.onchange = function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const maxSize = 100 * 1024 * 1024; // 100MB
+                    if (file.size > maxSize) {
+                        alert('File is too large. Maximum size is 100MB');
+                        return;
+                    }
+                    
+                    // Read file and store in localStorage
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        localStorage.setItem('pendingVideo', e.target.result);
+                        
+                        // Add fade out effect before navigation
+                        const landing = document.getElementById('landing');
+                        landing.classList.add('fade-out');
+                        
+                        // Wait for fade out to complete before navigating
+                        setTimeout(() => {
+                            window.location.href = '/editor.html';
+                        }, 300);
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
+            
+            fileInput.click();
+        }
+    </script>
+</head>
+<body>
+    <div class="container" id="landing">
+        <div class="header">
+            <img src="/assets/logo.png" alt="reiVid" class="logo">
+            <h1>reiVid</h1>
+        </div>
+        <p class="description">trim and crop videos in your browser</p>
+        <button class="upload-button" onclick="handleFileSelect()">Select Video</button>
+        
+        <div class="footer-links">
+            <a href="/about.html">about</a>
+            <a href="/donate.html">donate</a>
+            <a href="/terms.html">terms</a>
+            <a href="/privacy.html">privacy</a>
+        </div>
+    </div>
+</body>
+</html>

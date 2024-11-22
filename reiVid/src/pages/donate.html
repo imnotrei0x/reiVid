@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>donate</title>
+    <link rel="icon" type="image/x-icon" href="/assets/favicon.ico">
+    <link rel="icon" type="image/png" href="/assets/logo.png">
+    <link rel="stylesheet" href="/styles/common.css">
+    <style>
+        .donation-container {
+            display: flex;
+            gap: 2rem;
+            justify-content: center;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .donation-box {
+            background: #2a2a2a;
+            padding: 2rem;
+            border-radius: 8px;
+            width: 300px;
+            text-align: center;
+            height: 200px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .donation-box:last-child {
+            height: 200px;
+        }
+
+        .crypto-option {
+            cursor: pointer;
+            padding: 0.5rem;
+            margin: 0.5rem 0;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+
+        .crypto-option:hover {
+            background: #3a3a3a;
+        }
+
+        .crypto-address {
+            display: none;
+            margin-top: 0.5rem;
+            padding: 0.75rem;
+            background: #1a1a1a;
+            border-radius: 4px;
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .crypto-address:hover {
+            background: #222;
+        }
+
+        .crypto-option.active .crypto-address {
+            display: block;
+        }
+
+        .donate-btn {
+            display: inline-block;
+            padding: 1rem 2rem;
+            background: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+            margin-top: 1.5rem;
+        }
+
+        .donate-btn:hover {
+            background: #0056b3;
+        }
+
+        .copied-tooltip {
+            position: fixed;
+            background: #007bff;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .donation-box h2,
+        .donation-box h3 {
+            margin: 0 0 1rem 0;
+            font-size: 1.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .donation-container {
+                flex-direction: column;
+                align-items: center;
+                margin: 0 2rem;
+            }
+            
+            .donation-box,
+            .donation-box:last-child {
+                height: auto;
+                min-height: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="navbar-placeholder"></div>
+
+    <div class="main-content">
+        <h1>donate</h1>
+        <p>if you find this tool useful, consider supporting its development</p>
+        
+        <div class="donation-container">
+            <div class="donation-box">
+                <h2>paypal</h2>
+                <a href="https://paypal.me/reiloaded" class="donate-btn">donate with PayPal</a>
+            </div>
+
+            <div class="donation-box">
+                <div class="crypto-option" onclick="toggleAddress(this)">
+                    <h3>ethereum</h3>
+                    <div class="crypto-address" onclick="copyAddress(event, this)">0x078B365c62a16F9805D1D91C3249b1fe010A0F2F</div>
+                </div>
+                <div class="crypto-option" onclick="toggleAddress(this)">
+                    <h3>solana</h3>
+                    <div class="crypto-address" onclick="copyAddress(event, this)">5ZWj7a1f8tWkjBESHKgrLmXshuXxqeY9SYcfbshpAqPG</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        fetch('/components/navbar.html')
+            .then(response => response.text())
+            .then(data => {
+                document.getElementById('navbar-placeholder').innerHTML = data;
+            });
+
+        // Keep crypto-related functions
+        function toggleAddress(element) {
+            document.querySelectorAll('.crypto-option').forEach(opt => {
+                if (opt !== element) opt.classList.remove('active');
+            });
+            element.classList.toggle('active');
+        }
+
+        function copyAddress(event, element) {
+            event.stopPropagation();
+            navigator.clipboard.writeText(element.textContent).then(() => {
+                showCopiedTooltip(event);
+            });
+        }
+
+        function showCopiedTooltip(event) {
+            const tooltip = document.createElement('div');
+            tooltip.className = 'copied-tooltip';
+            tooltip.textContent = 'Copied!';
+            
+            tooltip.style.left = (event.clientX + 10) + 'px';
+            tooltip.style.top = (event.clientY + 10) + 'px';
+            
+            document.body.appendChild(tooltip);
+            
+            setTimeout(() => tooltip.style.opacity = '1', 0);
+            
+            setTimeout(() => {
+                tooltip.style.opacity = '0';
+                setTimeout(() => document.body.removeChild(tooltip), 200);
+            }, 1000);
+        }
+    </script>
+</body>
+</html> 

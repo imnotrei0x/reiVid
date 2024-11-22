@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>privacy</title>
+    <link rel="icon" type="image/x-icon" href="/assets/favicon.ico">
+    <link rel="icon" type="image/png" href="/assets/logo.png">
+    <link rel="stylesheet" href="/styles/common.css">
+</head>
+<body>
+    <div id="navbar-placeholder"></div>
+    <div class="container">
+        <h1>privacy policy</h1>
+
+        <h2>overview</h2>
+        <p>reiVid by reiLoaded is committed to protecting your privacy. This policy explains how we handle your data.</p>
+
+        <h2>data collection</h2>
+        <p>We do not collect, store, or transmit any personal data or video content:</p>
+        <ul>
+            <li>All video processing occurs entirely in your browser</li>
+            <li>Your videos never leave your device</li>
+            <li>We don't use cookies or tracking</li>
+            <li>We don't collect analytics or usage data</li>
+        </ul>
+
+        <h2>how it works</h2>
+        <ul>
+            <li>Videos are processed locally using FFmpeg.wasm</li>
+            <li>All computations happen in your browser</li>
+            <li>No data is sent to any servers</li>
+            <li>Processed videos are downloaded directly to your device</li>
+        </ul>
+
+        <h2>third-party services</h2>
+        <ul>
+            <li>We use Vercel for hosting static files</li>
+            <li>FFmpeg.wasm is loaded from CDN</li>
+            <li>No third-party analytics or tracking</li>
+        </ul>
+
+        <h2>your rights</h2>
+        <p>Since we don't collect any data, there is:</p>
+        <ul>
+            <li>No personal data to access or delete</li>
+            <li>No data sharing or selling</li>
+            <li>No data retention policies needed</li>
+        </ul>
+
+        <h2>contact</h2>
+        <p>For privacy concerns, you can reach me at:</p>
+        <ul>
+            <li>GitHub: <a href="https://github.com/imnotrei0x">@imnotrei0x</a></li>
+            <li>Twitter: <a href="https://x.com/reiLoaded">@reiLoaded</a></li>
+        </ul>
+
+        <h2>changes</h2>
+        <p>This privacy policy may be updated occasionally. Last updated: March 2024</p>
+    </div>
+    <script>
+        fetch('/components/navbar.html')
+            .then(response => response.text())
+            .then(data => {
+                document.getElementById('navbar-placeholder').innerHTML = data;
+            });
+    </script>
+</body>
+</html> 

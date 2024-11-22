@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>terms</title>
+    <link rel="icon" type="image/x-icon" href="/assets/favicon.ico">
+    <link rel="icon" type="image/png" href="/assets/logo.png">
+    <link rel="stylesheet" href="/styles/common.css">
+</head>
+<body>
+    <div id="navbar-placeholder"></div>
+    <div class="container">
+        <h1>terms of service</h1>
+
+        <h2>overview</h2>
+        <p>reiVid is a free and open-source web-based video editing tool by reiLoaded. By using this service, you agree to these terms.</p>
+
+        <h2>service description</h2>
+        <p>reiVid provides browser-based video editing capabilities using FFmpeg.wasm. All processing occurs client-side; we do not store or transmit your videos to any servers.</p>
+
+        <h2>open source</h2>
+        <ul>
+            <li>reiVid is open source software, available under the MIT License</li>
+            <li>The source code is available at <a href="https://github.com/imnotrei0x/reiVid" style="color: #007bff;">github.com/imnotrei0x/reiVid</a></li>
+            <li>We use FFmpeg.wasm, which is licensed under LGPL</li>
+            <li>Contributions are welcome under the project's guidelines</li>
+        </ul>
+
+        <h2>user responsibilities</h2>
+        <ul>
+            <li>You are responsible for the content you process using reiVid</li>
+            <li>You agree not to use reiVid for any illegal purposes</li>
+            <li>You understand that there are file size limitations (100MB maximum)</li>
+            <li>You acknowledge that processing speed depends on your device's capabilities</li>
+        </ul>
+
+        <h2>privacy</h2>
+        <ul>
+            <li>All video processing occurs in your browser using FFmpeg.wasm</li>
+            <li>We do not collect, store, or transmit your videos</li>
+            <li>We do not track user behavior or collect personal information</li>
+            <li>No data leaves your browser during video processing</li>
+        </ul>
+
+        <h2>limitations</h2>
+        <ul>
+            <li>reiVid is provided "as is" without any warranties</li>
+            <li>We are not responsible for any damages or losses resulting from use of the service</li>
+            <li>Browser compatibility and performance may vary</li>
+            <li>We reserve the right to modify or terminate the service at any time</li>
+        </ul>
+
+        <h2>third-party software</h2>
+        <ul>
+            <li>reiVid uses FFmpeg.wasm for video processing</li>
+            <li>FFmpeg is licensed under the LGPL</li>
+            <li>Other dependencies are listed in our GitHub repository</li>
+        </ul>
+
+        <h2>intellectual property</h2>
+        <p>While reiVid's code is open source under the MIT License, the reiVid name and logo are protected trademarks of reiLoaded. FFmpeg and other third-party software retain their respective licenses.</p>
+
+        <h2>contact</h2>
+        <ul>
+            <li>GitHub: <a href="https://github.com/imnotrei0x" style="color: #007bff;">@imnotrei0x</a></li>
+            <li>Twitter: <a href="https://x.com/reiLoaded" style="color: #007bff;">@reiLoaded</a></li>
+        </ul>
+
+        <h2>changes to terms</h2>
+        <p>We reserve the right to modify these terms at any time. Continued use of reiVid constitutes acceptance of updated terms.</p>
+    </div>
+    <script>
+        fetch('/components/navbar.html')
+            .then(response => response.text())
+            .then(data => {
+                document.getElementById('navbar-placeholder').innerHTML = data;
+            });
+    </script>
+</body>
+</html> 
