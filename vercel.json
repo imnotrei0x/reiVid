@@ -43,7 +43,7 @@
       "dest": "/src/pages/index.html"
     },
     {
-      "src": "/(about|editor|terms|privacy|donate)",
+      "src": "/(about|terms|privacy|donate)",
       "dest": "/src/pages/$1.html"
     }
   ]
