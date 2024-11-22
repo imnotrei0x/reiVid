@@ -22,14 +22,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     let previousVolume = 1;
     let selectedFormat = 'mp4';
 
-    const pendingVideoUrl = sessionStorage.getItem('pendingVideoUrl');
-    if (pendingVideoUrl) {
+    const pendingVideoData = sessionStorage.getItem('pendingVideo');
+    if (pendingVideoData) {
         try {
-            sessionStorage.removeItem('pendingVideoUrl');
+            sessionStorage.removeItem('pendingVideo');
             
             await initFFmpeg();
             
-            currentVideoUrl = pendingVideoUrl;
+            const response = await fetch(pendingVideoData);
+            const blob = await response.blob();
+            currentVideoUrl = URL.createObjectURL(blob);
             videoPreview.src = currentVideoUrl;
             
             const loadPromise = new Promise((resolve, reject) => {

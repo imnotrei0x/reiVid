@@ -28,25 +28,31 @@
             fileInput.onchange = function(e) {
                 const file = e.target.files[0];
                 if (file) {
-                    const maxSize = 100 * 1024 * 1024;
+                    const maxSize = 100 * 1024 * 1024; 
                     if (file.size > maxSize) {
                         alert('File is too large. Maximum size is 100MB');
                         return;
                     }
                     
-                    const videoUrl = URL.createObjectURL(file);
-                    
                     try {
-                        sessionStorage.setItem('pendingVideoUrl', videoUrl);
-                        
-                        const landing = document.getElementById('landing');
-                        landing.classList.add('fade-out');
-                        
-                        setTimeout(() => {
-                            window.location.href = '/editor.html';
-                        }, 300);
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            try {
+                                sessionStorage.setItem('pendingVideo', e.target.result);
+                                
+                                const landing = document.getElementById('landing');
+                                landing.classList.add('fade-out');
+                                
+                                setTimeout(() => {
+                                    window.location.href = '/editor.html';
+                                }, 300);
+                            } catch (error) {
+                                alert('Error preparing video. Please try a smaller file.');
+                                console.error('Storage error:', error);
+                            }
+                        };
+                        reader.readAsDataURL(file);
                     } catch (error) {
-                        URL.revokeObjectURL(videoUrl);
                         alert('Error preparing video. Please try a smaller file.');
                         console.error('Storage error:', error);
                     }
@@ -57,11 +63,7 @@
         }
 
         window.addEventListener('load', () => {
-            const existingUrl = sessionStorage.getItem('pendingVideoUrl');
-            if (existingUrl) {
-                URL.revokeObjectURL(existingUrl);
-                sessionStorage.removeItem('pendingVideoUrl');
-            }
+            sessionStorage.removeItem('pendingVideo');
         });
     </script>
 </head>
